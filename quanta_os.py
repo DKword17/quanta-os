@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-quanta_os.py — Quanta OS Unified Entry Point
+quanta_os.py 鈥?Quanta OS Unified Entry Point
 
 Usage:
     # Interactive Python
@@ -23,13 +23,13 @@ Architecture:
         2. Initializes the compilation pipeline
         3. Boots the scheduler with detected resources
         4. Optionally runs calibration on available qubits
-        5. Handles job lifecycle (submit → compile → execute → results)
+        5. Handles job lifecycle (submit 鈫?compile 鈫?execute 鈫?results)
 
     Design philosophy: 
         "Make the simple case fast, and the complex case possible."
-        — Alex Chen, Quanta OS Architect
+        鈥?Alex Chen, Quanta OS Architect
 
-(c) 2026 Alex Chen — Quanta OS Project Lead, San Francisco
+(c) 2026 Alex Chen 鈥?Quanta OS Project Lead, San Francisco
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Setup logging — production systems should use structured logging
+# Setup logging 鈥?production systems should use structured logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -91,7 +91,7 @@ class RunResult:
     fidelity_estimate: float = 0.0
 
 
-# Known backend registry — extensible via plugins
+# Known backend registry 鈥?extensible via plugins
 BACKEND_REGISTRY = {
     "wukong_180": {
         "name": "origin_wukong_180",
@@ -126,7 +126,7 @@ BACKEND_REGISTRY = {
 
 class QOS:
     """
-    Quanta OS — Main entry point.
+    Quanta OS 鈥?Main entry point.
     
     This is your one-stop shop for everything quantum.
     Create one instance and use it for the lifetime of your application.
@@ -165,7 +165,7 @@ class QOS:
             self._initialize()
     
     def _initialize(self):
-        """Internal initialization — discovers resources, boots subsystems."""
+        """Internal initialization 鈥?discovers resources, boots subsystems."""
         start = time.monotonic()
         
         # Discover available backends
@@ -182,7 +182,7 @@ class QOS:
                     f"(default backend: {self._default_backend})")
     
     def _discover_backends(self) -> Dict[str, Any]:
-        """Discover available backends — local and cloud."""
+        """Discover available backends 鈥?local and cloud."""
         available = {}
         
         # Always available: local simulator
@@ -195,10 +195,10 @@ class QOS:
             bridge = WukongBridge(mode="local", auto_reconnect=False)
             if bridge.connect():
                 available["wukong_180"] = BACKEND_REGISTRY["wukong_180"]
-                logger.info("  → Origin Wukong 180 detected (local ZMQ)")
+                logger.info("  鈫?Origin Wukong 180 detected (local ZMQ)")
                 bridge._zmq_socket.close()
         except Exception:
-            logger.debug("  → No local Wukong backend detected")
+            logger.debug("  鈫?No local Wukong backend detected")
         
         return available
     
@@ -220,7 +220,7 @@ class QOS:
                 gate_set=[],
             )
     
-    # ── Public API ────────────────────────────────────────────────────
+    # 鈹€鈹€ Public API 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
     
     def list_backends(self) -> List[Dict[str, Any]]:
         """List all available backends with their capabilities."""
@@ -285,146 +285,6 @@ class QOS:
             Calibration results including T1, T2*, gate fidelity.
         """
         try:
-            from kernel.kalibrierung_protokoll import (
-                vollkalibrierung_durchfuehren
-            )
-        except ImportError:
-            logger.warning("Calibration module not available")
-            return {"status": "not_available"}
-        
-        result = vollkalibrierung_durchfuehren(qubit_id=qubit_id)
-        
-        return {
-            "qubit_id": qubit_id,
-            "t1_us": result.t1_zeit_s * 1e6,
-            "t2_star_us": result.t2_stern_zeit_s * 1e6,
-            "fidelity_cz": result.gatter_fidelitaet_cz,
-            "valid": bool(result),
-        }
-    
-    def status(self) -> Dict[str, Any]:
-        """Get system-wide status."""
-        backend_info = self.list_backends()
-        scheduler_status = {}
-        
-        if self._scheduler:
-            scheduler_status = self._scheduler.get_status()
-        
-        return {
-            "version": "0.9.1",
-            "initialized": self._initialized,
-            "default_backend": self._default_backend,
-            "available_backends": len(backend_info),
-            "scheduler": scheduler_status,
-        }
-
-
-# ── CLI ────────────────────────────────────────────────────────────────
-
-def main():
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Quanta OS — Quantum Operating System",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Compile a circuit
-  python quanta_os.py compile my_circuit.qasm
-  
-  # Compile with a specific backend
-  python quanta_os.py compile circuit.qasm --backend wukong_180
-  
-  # List available backends
-  python quanta_os.py backends
-  
-  # Run calibration
-  python quanta_os.py calibrate --qubit 0
-  
-  # Show system status
-  python quanta_os.py status
-        """,
-    )
-    
-    parser.add_argument(
-        "--backend", "-b",
-        default="generic_simulator",
-        help="Target backend (default: generic_simulator)",
-    )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose logging",
-    )
-    
-    subparsers = parser.add_subparsers(dest="command")
-    
-    # compile
-    compile_parser = subparsers.add_parser("compile", help="Compile a QASM circuit")
-    compile_parser.add_argument("file", help="Path to .qasm file or inline QASM string")
-    compile_parser.add_argument("--output", "-o", help="Output file for compiled QASM")
-    
-    # run
-    run_parser = subparsers.add_parser("run", help="Compile and execute a circuit")
-    run_parser.add_argument("file", nargs="?", help="Path to .qasm file")
-    run_parser.add_argument("--shots", type=int, default=1024, help="Number of shots")
-    
-    # backends
-    subparsers.add_parser("backends", help="List available backends")
-    
-    # calibrate
-    cal_parser = subparsers.add_parser("calibrate", help="Run calibration")
-    cal_parser.add_argument("--qubit", type=int, default=0, help="Qubit to calibrate")
-    
-    # status
-    subparsers.add_parser("status", help="Show system status")
-    
-    args = parser.parse_args()
-    
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    
-    try:
-        qos = QOS(backend=args.backend)
-    except Exception as e:
-        print(f"Error initializing Quanta OS: {e}", file=sys.stderr)
-        return 1
-    
-    if args.command == "compile":
-        if os.path.isfile(args.file):
-            with open(args.file) as f:
-                qasm = f.read()
-        else:
-            qasm = args.file
-        
-        result = qos.compile(qasm)
-        print(result.compiled)
-        
-        if args.output:
-            with open(args.output, "w") as f:
-                f.write(result.compiled)
-            logger.info(f"Written to {args.output}")
-        
-        logger.info(f"Compiled: {result.original_ops} → {result.final_ops} ops "
-                    f"in {result.compile_time_ms:.1f} ms")
-    
-    elif args.command == "backends":
-        for b in qos.list_backends():
-            print(f"  {b['id']:20s}  {b['qubits']:4d} qubits  "
-                  f"{b['type']:16s}  {b['provider']}")
-    
-    elif args.command == "calibrate":
-        result = qos.calibrate(args.qubit)
-        print(json.dumps(result, indent=2))
-    
-    elif args.command == "status":
-        status = qos.status()
-        print(json.dumps(status, indent=2))
-    
-    else:
-        parser.print_help()
-    
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+            from kernel.calibration_protocol import (
+    run_full_calibration,
+)
