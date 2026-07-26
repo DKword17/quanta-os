@@ -1,4 +1,4 @@
-# Quanta OS — Architectural Overview
+# Quanta OS 鈥?Architectural Overview
 
 **Document Reference:** QOS-ARCH-001  
 **Author:** William Thorpe, MEng (Cantab.)  
@@ -22,9 +22,9 @@ academic or industrial quantum computing facilities.
 **Key design objectives:**
 
  - **Portability:** Support for seven distinct qubit modalities via a
-   unified hardware abstraction layer (see §3.2).
+   unified hardware abstraction layer (see 搂3.2).
  - **Determinism:** Real-time pulse generation through FPGA-coupled
-   kernel primitives, with worst-case interrupt latency below 1 μs.
+   kernel primitives, with worst-case interrupt latency below 1 渭s.
  - **Composability:** A protocol-agnostic middleware layer that permits
    the simultaneous operation of multiple compilation strategies,
    scheduling policies, and error-correction codes.
@@ -38,37 +38,16 @@ communicates with its immediate neighbours through well-defined
 interfaces. Figure 2.1 below illustrates the principal layers.
 
 ```
- ┌───────────────────────────────────────────────────────────────┐
- │                     User / Cloud Interface                     │
- │  (REST API, gRPC, Python SDK, CLI)                            │
- ├───────────────────────────────────────────────────────────────┤
- │               Compiler & Optimisation Middleware                │
- │  QASM parsing  →  Gate decomposition  →  Topology mapping     │
- ├───────────────────────────────────────────────────────────────┤
- │              Resource Scheduler & Job Manager                   │
- │  Priority queues  →  Compatibility packing  →  Load balancing │
- ├───────────────────────────────────────────────────────────────┤
- │                 Error Correction & Calibration                  │
- │  Surface code encoding  →  Kalman filtering  →  RB fidelity   │
- ├───────────────────────────────────────────────────────────────┤
- │                   Hardware Abstraction Layer                    │
- │     Superconducting  ·  Ion Trap  ·  Photonic  ·  Neutral      │
- │     Silicon Spin  ·  NV Centre  ·  Topological                 │
- ├───────────────────────────────────────────────────────────────┤
- │                  Kernel (Microkernel, ≤ 64 KB)                  │
- │  Memory management  ·  FPGA DMA control  ·  ISR dispatching    │
- │  Zero-copy IPC  ·  Hardware timer  ·  Bootstrapping           │
- └───────────────────────────────────────────────────────────────┘
-```
+ 鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?                    User / Cloud Interface                     鈹? 鈹? (REST API, gRPC, Python SDK, CLI)                            鈹? 鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?              Compiler & Optimisation Middleware                鈹? 鈹? QASM parsing  鈫? Gate decomposition  鈫? Topology mapping     鈹? 鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?             Resource Scheduler & Job Manager                   鈹? 鈹? Priority queues  鈫? Compatibility packing  鈫? Load balancing 鈹? 鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?                Error Correction & Calibration                  鈹? 鈹? Surface code encoding  鈫? Kalman filtering  鈫? RB fidelity   鈹? 鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?                  Hardware Abstraction Layer                    鈹? 鈹?    Superconducting  路  Ion Trap  路  Photonic  路  Neutral      鈹? 鈹?    Silicon Spin  路  NV Centre  路  Topological                 鈹? 鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹? 鈹?                 Kernel (Microkernel, 鈮?64 KB)                  鈹? 鈹? Memory management  路  FPGA DMA control  路  ISR dispatching    鈹? 鈹? Zero-copy IPC  路  Hardware timer  路  Bootstrapping           鈹? 鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?```
 
-*Figure 2.1 — Quanta OS layered architecture*
+*Figure 2.1 鈥?Quanta OS layered architecture*
 
 Each layer is described in detail in the sections that follow.
 
 ### 2.1 Microkernel Design Philosophy
 
-The microkernel — inspired by the L4 family [Liedtke, 1995] and,
-more recently, by seL4 [Klein et al., 2009] — implements only those
+The microkernel 鈥?inspired by the L4 family [Liedtke, 1995] and,
+more recently, by seL4 [Klein et al., 2009] 鈥?implements only those
 primitives that cannot safely reside in user space:
 
  - **Address-space management:** The kernel manages page tables and
@@ -79,11 +58,11 @@ primitives that cannot safely reside in user space:
  - **Interrupt dispatch:** Kernel-provided IRQ handlers forward
    hardware interrupts (e.g., ADC-ready, DMA-complete) to user-space
    driver tasks.
- - **Timer:** A single-shot hardware timer with 1 μs resolution,
+ - **Timer:** A single-shot hardware timer with 1 渭s resolution,
    usable for pulse scheduling and watchdog tasks.
 
-All other functionality — device drivers, file systems, network stacks,
-and, indeed, the quantum compilation pipeline — runs as user-space
+All other functionality 鈥?device drivers, file systems, network stacks,
+and, indeed, the quantum compilation pipeline 鈥?runs as user-space
 servers. This design minimises the trusted computing base (TCB).
 
 ### 2.2 Formal Verification Considerations
@@ -112,17 +91,17 @@ irrespective of their underlying physical implementation.
 
 The HAL currently supports seven backends, summarised in Table 3.1.
 
-| ID | Modality         | Representative Hardware       | Native Gates        | T₂ (typical) |
+| ID | Modality         | Representative Hardware       | Native Gates        | T鈧?(typical) |
 |----|------------------|-------------------------------|---------------------|--------------|
-| 1  | Superconducting  | Origin悟空 180, IBM Heron     | CX, CZ, single-qubit| 30–100 μs    |
-| 2  | Trapped Ion      | Quantinuum H2, IonQ Forte     | MS, single-qubit    | 0.5–5 s      |
+| 1  | Superconducting  | Origin鎮熺┖ 180, IBM Heron     | CX, CZ, single-qubit| 30鈥?00 渭s    |
+| 2  | Trapped Ion      | Quantinuum H2, IonQ Forte     | MS, single-qubit    | 0.5鈥? s      |
 | 3  | Photonic         | Xanadu Borealis, PsiQuantum   | BS, PS, Squeezing   | N/A (flight) |
-| 4  | Neutral Atom     | QuEra Aquila, Pasqal Fresnel  | CZ, Rydberg block   | 1–10 s       |
-| 5  | Silicon Spin     | Intel Tunnel Falls, Diraq     | CX, single-qubit    | 0.1–1 ms     |
-| 6  | NV Centre        | Quantum Brilliance, 国仪量子  | single-qubit, CZ    | 0.5–10 ms    |
+| 4  | Neutral Atom     | QuEra Aquila, Pasqal Fresnel  | CZ, Rydberg block   | 1鈥?0 s       |
+| 5  | Silicon Spin     | Intel Tunnel Falls, Diraq     | CX, single-qubit    | 0.1鈥? ms     |
+| 6  | NV Centre        | Quantum Brilliance, 鍥戒华閲忓瓙  | single-qubit, CZ    | 0.5鈥?0 ms    |
 | 7  | Topological      | Microsoft Station Q           | Braiding, Clifford  | Theoretical  |
 
-*Table 3.1 — Supported backend modalities*
+*Table 3.1 鈥?Supported backend modalities*
 
 ### 3.2 Backend Registration Protocol
 
@@ -155,9 +134,9 @@ gate set using a combination of:
 
  - The KAK decomposition [Smith et al., 2008] for two-qubit unitaries,
    which achieves the minimal CNOT count of three;
- - The Solovay–Kitaev algorithm [Dawson & Nielsen, 2006] for
+ - The Solovay鈥揔itaev algorithm [Dawson & Nielsen, 2006] for
    single-qubit gates, yielding sequences with length
-   O(log^{3.97}(1/ε)).
+   O(log^{3.97}(1/蔚)).
 
 ### 4.2 Topology-Aware Optimisation
 
@@ -182,24 +161,24 @@ After routing, the circuit is scheduled onto the backend's timing
 grid. The scheduler respects:
 
  - Gate latency (measured per gate type from calibration data);
- - Qubit coherence limits (T₁ and T₂*);
+ - Qubit coherence limits (T鈧?and T鈧?);
  - Readout resonator ring-down times.
 
 ---
 
 ## 5. Calibration Subsystem
 
-The calibration subsystem — documented in full in the
-`kalibrierung_protokoll.py` module — performs routine characterisation
+The calibration subsystem 鈥?documented in full in the
+`calibration_protocol.py` module 鈥?performs routine characterisation
 of each qubit's coherence properties.
 
 ### 5.1 Measurement Protocols
 
 Three standard protocols are provided:
 
- 1. **T₁ (Inversion Recovery):** Measures longitudinal relaxation by
-    fitting an exponential decay P₀(τ) = 1 - A·exp(-τ/T₁).
- 2. **T₂* (Ramsey Interferometry):** Measures dephasing by fitting
+ 1. **T鈧?(Inversion Recovery):** Measures longitudinal relaxation by
+    fitting an exponential decay P鈧€(蟿) = 1 - A路exp(-蟿/T鈧?.
+ 2. **T鈧? (Ramsey Interferometry):** Measures dephasing by fitting
     a damped cosine oscillation.
  3. **Randomized Benchmarking:** Measures average gate fidelity by
     extrapolating the Clifford decay curve [Magesan et al., 2011].
@@ -208,7 +187,7 @@ Three standard protocols are provided:
 
 Between successive calibrations, the system applies a Kalman filter
 [Kalman, 1960, Trans. ASME] whose state vector comprises the qubit's
-resonance frequency, T₁, and T₂*. The filter converges within 10 to
+resonance frequency, T鈧? and T鈧?. The filter converges within 10 to
 15 measurement epochs under typical noise conditions.
 
 ---
@@ -224,10 +203,10 @@ time:
 | Priority                | Higher-priority jobs pre-empt lower-priority ones.    | Multi-user cloud platforms   |
 | Compatibility Packing  | Jobs are co-located on the same QPU if their circuits have overlapping gate sets and complementary qubit counts. | Maximising throughput in data-centre deployments |
 
-*Table 6.1 — Scheduling policies*
+*Table 6.1 鈥?Scheduling policies*
 
 The Compatibility Packing policy is inspired by the QOS system
-[Giortamis et al., OSDI '25], which demonstrated a 2.6× improvement in
+[Giortamis et al., OSDI '25], which demonstrated a 2.6脳 improvement in
 throughput with a fidelity penalty of less than 3 %.
 
 ---
@@ -253,17 +232,17 @@ discussion on the following topics:
 
 ## References
 
- 1. Dawson, C. M. & Nielsen, M. A. (2006). "The Solovay–Kitaev
-    Algorithm." *Quantum Information & Computation*, 6(1), 81–95.
+ 1. Dawson, C. M. & Nielsen, M. A. (2006). "The Solovay鈥揔itaev
+    Algorithm." *Quantum Information & Computation*, 6(1), 81鈥?5.
  2. Giortamis, E. et al. (2025). "QOS: A Quantum Operating System."
     *USENIX OSDI '25*.
  3. Kalman, R. E. (1960). "A New Approach to Linear Filtering and
-    Prediction Problems." *Trans. ASME—J. Basic Engineering*, 82, 35–45.
+    Prediction Problems." *Trans. ASME鈥擩. Basic Engineering*, 82, 35鈥?5.
  4. Klein, G. et al. (2009). "seL4: Formal Verification of an OS
     Kernel." *ACM SOSP '09*.
  5. Li, G. et al. (2019). "Tackling the Qubit Mapping Problem for
     NISQ-Era Quantum Devices." *ACM DAC '19*.
- 6. Liedtke, J. (1995). "On μ-Kernel Construction." *ACM SOSP '95*.
+ 6. Liedtke, J. (1995). "On 渭-Kernel Construction." *ACM SOSP '95*.
  7. Magesan, E. et al. (2011). "Randomized Benchmarking of Quantum
     Gates." *Phys. Rev. Lett.*, 106, 180504.
  8. Nielsen, M. A. & Chuang, I. L. (2010). *Quantum Computation and
