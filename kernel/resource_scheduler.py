@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
 """
-Quanta OS — Resource Scheduler & Quantum Job Manager
+Quanta OS 闁?Resource Scheduler & Quantum Job Manager
 
 Responsible for managing quantum execution resources across multiple backends,
 co-locating compatible jobs on the same QPU, and managing the fidelity-utilization
@@ -198,10 +198,7 @@ class ResourceScheduler:
                 if backend:
                     job.backend_constraint = backend
                     ready_jobs.append(job)
-                    # Increment load. Use original queue depth (before pop)
-                    # to avoid 1/0 when draining the last item.
-                    pending = len(queue) if queue else 1
-                    self._backends[backend]['load'] += 1.0 / pending
+
                 else:
                     # Re-queue with reduced priority
                     demoted = max(
