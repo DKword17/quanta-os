@@ -224,13 +224,19 @@ class ZMQProtocol:
     
     @staticmethod
     def pack_circuit_task(task: CircuitTask) -> tuple:
-        """打包电路任务为 ZMQ 消息"""
+        """打包电路任务为 ZMQ 消息，返回 (header, body, binary) 三元组"""
         header = MessageHeader.new(
             msg_type=MsgType.SUBMIT_TASK,
             backend=task.backend,
         )
         body = asdict(task)
-        return ZMQProtocol.pack(header, body)
+        frames = ZMQProtocol.pack(header, body)
+        # Frames are bytes; decode header/body back to objects so callers
+        # get (header_dict, body_dict, binary_bytes) instead of raw bytes.
+        header_out = MessageHeader.from_dict(json.loads(frames[0].decode('utf-8')))
+        body_out = json.loads(frames[1].decode('utf-8'))
+        binary_out = frames[2] if len(frames) > 2 else None
+        return header_out, body_out, binary_out
     
     @staticmethod
     def pack_task_result(result: TaskResult) -> tuple:

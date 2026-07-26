@@ -136,14 +136,15 @@ class QOS:
         >>> qos.list_backends()
         ['wukong_180', 'quantinuum_h2', 'generic_simulator']
         
-        >>> result = qos.compile("""
-        ...     OPENQASM 3.0;
-        ...     qubit[2] q;
-        ...     h q[0];
-        ...     cx q[0], q[1];
-        ...     measure q[0];
-        ...     measure q[1];
-        ... """, backend="generic_simulator")
+        >>> qasm = '''
+        ... OPENQASM 3.0;
+        ... qubit[2] q;
+        ... h q[0];
+        ... cx q[0], q[1];
+        ... measure q[0];
+        ... measure q[1];
+        ... '''
+        >>> result = qos.compile(qasm, backend="generic_simulator")
         
         >>> print(result.final_ops)
     """
