@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# C / C++
+*.o
+*.elf
+*.bin
+*.obj
+*.exe
+*.lib
+*.dll
+
+# FPGA
+*.bit
+*.dcp
+*.jou
+*.log
+*.str
+vivado*.backup*
+.vivado/
+.Xil/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
