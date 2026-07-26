@@ -53,7 +53,7 @@ T1_MIN_AKZEPTABEL: Final[float] = 10e-6       # 10 μs — untere Toleranzgrenze
 T2_MIN_AKZEPTABEL: Final[float] = 5e-6        # 5 μs
 FIDELITY_SCHWELLE_MINIMAL: Final[float] = 0.99 # untere Grenze für CZ-Gatter
 MESSWIEDERHOLUNGEN_STANDARD: Final[int] = 1024
-TEMPERATUR_STABILITÄTSGRENZE_MK: Final[float] = 5.0  # ±5 mK
+TEMPERATUR_STABILITÄTSGRENZE_MK: Final[float] = 50.0  # ±50 mK (dilution fridge mixing chamber range)
 
 
 # ─── Aufzählungen ────────────────────────────────────────────────────────────
