@@ -1,7 +1,7 @@
 # Quanta OS 鈥?Architectural Overview
 
 **Document Reference:** QOS-ARCH-001  
-**Author:** William Thorpe, MEng (Cantab.)  
+**Author:** DKword17  
 **Date:** 26th July 2026  
 **Status:** Draft for Review  
 **Version:** 0.9.1  

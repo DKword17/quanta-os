@@ -4,6 +4,17 @@
  * 将逻辑电路映射到物理 qubit 拓扑
  */
 
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
+ */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -59,15 +70,15 @@ static uint32_t bfs_swap_distance(hardware_graph_t *hw,
                                    uint32_t src, uint32_t dst) {
     if (src == dst) return 0;
     if (hw->coupling[src][dst] > 0.0f) return 0;
-    
+
     uint32_t *dist = (uint32_t*)calloc(hw->n_phys, sizeof(uint32_t));
     uint32_t *queue = (uint32_t*)malloc(hw->n_phys * sizeof(uint32_t));
     uint32_t head = 0, tail = 0;
-    
+
     memset(dist, 0xFF, hw->n_phys * sizeof(uint32_t));  /* 0xFF = INF */
     dist[src] = 0;
     queue[tail++] = src;
-    
+
     while (head < tail) {
         uint32_t cur = queue[head++];
         for (uint32_t n = 0; n < hw->n_phys; n++) {
@@ -77,7 +88,7 @@ static uint32_t bfs_swap_distance(hardware_graph_t *hw,
             }
         }
     }
-    
+
     uint32_t result = dist[dst];
     free(dist);
     free(queue);
@@ -94,14 +105,14 @@ qubit_assignment_t* sabre_map(quantum_circuit_t *circuit,
     uint32_t n = circuit->n_logical_qubits;
     qubit_assignment_t *assign = (qubit_assignment_t*)
         calloc(n, sizeof(qubit_assignment_t));
-    
+
     /* 初始映射：贪心赋值 */
     for (uint32_t i = 0; i < n; i++) {
         assign[i].logical_idx = i;
         assign[i].physical_idx = i % hw->n_phys;
         assign[i].swap_cost = 0;
     }
-    
+
     /* 分析电路——找前向依赖 */
     uint32_t *last_use = (uint32_t*)calloc(n, sizeof(uint32_t));
     for (uint32_t i = 0; i < circuit->op_count; i++) {
@@ -111,29 +122,29 @@ qubit_assignment_t* sabre_map(quantum_circuit_t *circuit,
             last_use[op->target]  = i;
         }
     }
-    
+
     /* 滑动窗口：每次处理一层门 */
     uint32_t total_swaps = 0;
     uint32_t window_size = 20;  /* 前瞻窗口 */
-    
+
     for (uint32_t pos = 0; pos < circuit->op_count; ) {
         /* 收集当前窗口内的门 */
         uint32_t window_end = (pos + window_size < circuit->op_count) 
                               ? pos + window_size : circuit->op_count;
-        
+
         /* 对窗口中每个两量子门 */
         for (uint32_t w = pos; w < window_end; w++) {
             quantum_instruction_t *op = &circuit->ops[w];
             if (op->gate != GATE_CX && op->gate != GATE_CZ) continue;
-            
+
             uint32_t l_a = op->control;
             uint32_t l_b = op->target;
             uint32_t p_a = assign[l_a].physical_idx;
             uint32_t p_b = assign[l_b].physical_idx;
-            
+
             /* 如果已经在相邻 qubit 上，无需 SWAP */
             if (hw->coupling[p_a][p_b] > 0.0f) continue;
-            
+
             /* 找最短 SWAP 路径 */
             uint32_t dist = bfs_swap_distance(hw, p_a, p_b);
             if (dist == 0xFFFFFFFF) {
@@ -141,7 +152,7 @@ qubit_assignment_t* sabre_map(quantum_circuit_t *circuit,
                 /* 找最优中间节点 */
                 uint32_t best_mid = 0;
                 uint32_t best_cost = 0xFFFFFFFF;
-                
+
                 for (uint32_t m = 0; m < hw->n_phys; m++) {
                     uint32_t d1 = bfs_swap_distance(hw, p_a, m);
                     uint32_t d2 = bfs_swap_distance(hw, m, p_b);
@@ -150,7 +161,7 @@ qubit_assignment_t* sabre_map(quantum_circuit_t *circuit,
                         best_mid = m;
                     }
                 }
-                
+
                 /* 执行 SWAP 链 (简化：一次交换一个) */
                 if (best_cost < 0xFFFFFFFF) {
                     assign[l_b].physical_idx = best_mid;
@@ -159,11 +170,11 @@ qubit_assignment_t* sabre_map(quantum_circuit_t *circuit,
                 }
             }
         }
-        
+
         /* 移动到窗口末尾 */
         pos = window_end;
     }
-    
+
     *out_swap_count = total_swaps;
     free(last_use);
     return assign;

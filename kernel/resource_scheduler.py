@@ -2,6 +2,17 @@
 """
 quanta-os: kernel/resource_scheduler.py
 """
+
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
+
 from __future__ import annotations
 import asyncio
 import logging
@@ -12,11 +23,11 @@ from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
 """
-Quanta OS 闁?Resource Scheduler & Quantum Job Manager
+Quanta OS —Resource Scheduler & Quantum Job Manager
 
 Responsible for managing quantum execution resources across multiple backends,
 co-locating compatible jobs on the same QPU, and managing the fidelity-utilization
-tradeoff. Architecture inspired by QOS (TUM, OSDI '25).
+tradeoff.
 
 Key design decisions:
 - Multi-programming scheduler: compatible jobs share QPU spatial/temporal resources
@@ -27,14 +38,12 @@ Key design decisions:
 
 logger = logging.getLogger('quanta.scheduler')
 
-
 class JobPriority(IntEnum):
     """Job priority tiers for quantum task scheduling."""
     BACKGROUND = 10
     BATCH = 20
     INTERACTIVE = 30
     REAL_TIME = 40
-
 
 class JobState(IntEnum):
     """Lifecycle states for a quantum job."""
@@ -46,7 +55,6 @@ class JobState(IntEnum):
     COMPLETED = 5
     FAILED = 6
     CANCELLED = 7
-
 
 @dataclass
 class QuantumJob:
@@ -72,7 +80,6 @@ class QuantumJob:
     backend_constraint: Optional[str] = None
     optimization_level: int = 2
 
-
 @dataclass
 class SchedulerConfig:
     """Configuration for the scheduler's resource management policies.
@@ -89,7 +96,6 @@ class SchedulerConfig:
     preemption_timeout_ms: int = 5000
     compilation_timeout_s: int = 300
     execution_timeout_s: int = 3600
-
 
 class ResourceScheduler:
     """Quantum resource scheduler with multi-programming support.

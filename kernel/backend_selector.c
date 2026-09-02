@@ -1,9 +1,19 @@
 /**
  * kernel/backend_selector.c
  * Quanta OS — 自动后端选择器
- * 
  * 启动时通过硬件探测自动选择最优后端，
  * 也支持手动指定 vendor/model。
+ */
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
  */
 
 #include "hal/qubit_abstract.h"
@@ -13,7 +23,7 @@ backend_registry_t g_backends = {0};
 int register_backend(quanta_backend_t *backend) {
     if (g_backends.count >= MAX_BACKENDS)
         return -1;  /* 注册表满 */
-    
+
     g_backends.backends[g_backends.count++] = backend;
     return 0;
 }
@@ -31,7 +41,6 @@ int select_backend(const char *name) {
 
 /**
  * 自动检测硬件并选择最优后端
- *
  * 检测流程:
  * 1. 扫描 PCI/SPI 总线查找 FPGA 控制卡
  * 2. 读取硬件 ID 寄存器
@@ -41,19 +50,19 @@ int select_backend(const char *name) {
  */
 quanta_backend_t* detect_and_select(void) {
     uint32_t hw_id = probe_hardware_id();
-    
+
     /* 探测硬件类型 */
     qubit_physical_type_t detected = QUBIT_TYPE_UNKNOWN;
-    
+
     /* 尝试读取 qubit 控制器的识别寄存器 */
     /* 每种架构有唯一的控制接口特征 */
     detected = identify_controller_type();
-    
+
     if (detected == QUBIT_TYPE_UNKNOWN) {
         /* 无法自动识别 → 回退到手动指定或模拟模式 */
         return NULL;
     }
-    
+
     /* 在注册表中找匹配 */
     for (uint32_t i = 0; i < g_backends.count; i++) {
         quanta_backend_t *be = g_backends.backends[i];
@@ -64,7 +73,7 @@ quanta_backend_t* detect_and_select(void) {
             }
         }
     }
-    
+
     return NULL;
 }
 
@@ -76,12 +85,12 @@ static qubit_physical_type_t identify_controller_type(void) {
     /* 尝试读取标准硬件 ID 寄存器 (地址 0x7F00) */
     uint32_t hw_id = 0;
     int ret = read_control_register(0x7F00, &hw_id);
-    
+
     if (ret != 0) {
         /* 可能没有真实硬件 → 运行在模拟模式 */
         return QUBIT_TYPE_UNKNOWN;
     }
-    
+
     /* 硬件 ID → 架构映射 */
     switch (hw_id & 0xFF) {
         case 0x01: return QUBIT_TYPE_TRANSMON;        /* IBM/本源超导 */

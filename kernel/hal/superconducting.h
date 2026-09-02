@@ -5,6 +5,17 @@
  *       本源量子 (Origin Quantum), 国盾量子 (QuantumCTek)
  */
 
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
+ */
+
 #include "qubit_abstract.h"
 
 /* ========== 厂商规格表 ========== */
@@ -32,24 +43,24 @@ static const superconducting_vendor_t known_superconducting[] = {
     {"IBM",  "Osprey",         QUBIT_TYPE_TRANSMON,   433,  130, 110, 0.9996, 0.996,  0.975, 45,  10, 0},
     {"IBM",  "Condor",         QUBIT_TYPE_TRANSMON,   1121, 100, 80,  0.9995, 0.994,  0.970, 45,  10, 0},
     {"IBM",  "Heron r1",       QUBIT_TYPE_TRANSMON,   133,  200, 160, 0.9998, 0.998,  0.985, 35,  10, 0},
-    
+
     /* Google Quantum AI */
     {"Google", "Sycamore",     QUBIT_TYPE_XMON,       53,   50,  40,  0.9990, 0.995,  0.960, 50,  15, 1},
     {"Google", "Sycamore v2",  QUBIT_TYPE_XMON,       70,   60,  50,  0.9995, 0.996,  0.965, 45,  15, 1},
     {"Google", "Willow",       QUBIT_TYPE_XMON,       105,  100, 80,  0.9996, 0.997,  0.975, 40,  10, 1},
-    
+
     /* Rigetti */
     {"Rigetti", "Aspen-M-3",   QUBIT_TYPE_TRANSMON,   80,   30,  25,  0.9990, 0.990,  0.950, 50,  20, 2},
     {"Rigetti", "Ankaa-3",     QUBIT_TYPE_TRANSMON,   84,   50,  40,  0.9995, 0.995,  0.970, 40,  15, 2},
-    
+
     /* 本源量子 (Origin Quantum) */
     {"本源量子", "Origin Wukong", QUBIT_TYPE_TRANSMON, 72,  80,  60,  0.9992, 0.993,  0.960, 45,  15, 0},
     {"本源量子", "Origin Mountain",QUBIT_TYPE_TRANSMON,24,  70,  50,  0.9990, 0.990,  0.950, 50,  15, 2},
-    
+
     /* 国盾量子 (QuantumCTek) */
     {"国盾量子", "QKD-72",     QUBIT_TYPE_FLUX_QUBIT, 72,   60,  45,  0.9985, 0.988,  0.940, 55,  20, 2},
     {"国盾量子", "ZD-50",      QUBIT_TYPE_FLUX_QUBIT, 50,   55,  40,  0.9980, 0.985,  0.935, 60,  20, 1},
-    
+
     {NULL}
 };
 

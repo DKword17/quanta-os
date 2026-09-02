@@ -5,7 +5,7 @@ kernel/fourier_adaptive.py
 
 Quanta OS — Adaptive Quantum Fourier Transform (AQFT)
 
-Author:    Jean-Luc Mercier / INRIA Paris
+Author:    DKword17 <19832535010@163.com>
 Date:      2026-07-25
 License:   Apache 2.0
 
@@ -26,6 +26,16 @@ References:
   - Cleve, R., et al. (1998). "Quantum Algorithms Revisited." Proc. R. Soc. A.
   - Nielsen & Chuang, Section 5.2 — "Phase Estimation"
 """
+
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
 
 from __future__ import annotations
 import math
@@ -65,7 +75,6 @@ def hadamard_matrix(n: int) -> np.ndarray:
     h1 = np.array([[1, 1], [1, -1]], dtype=complex) / math.sqrt(2)
     return reduce(np.kron, [h1] * n)
 
-
 def controlled_rotation_matrix(control_qubits: list[int],
                                 target_gate: np.ndarray) -> np.ndarray:
     """
@@ -99,7 +108,6 @@ def controlled_rotation_matrix(control_qubits: list[int],
         U = block_upper + U @ block_lower
 
     return U
-
 
 def kitaev_phase_estimation(operator: np.ndarray,
                              initial_state: np.ndarray,
@@ -144,7 +152,6 @@ def kitaev_phase_estimation(operator: np.ndarray,
         phi_estimate += bit / (2 ** (k + 1))
 
     return phi_estimate
-
 
 class AdaptiveFourierTransform:
     """
@@ -243,7 +250,6 @@ class AdaptiveFourierTransform:
         """Return current rotation angles."""
         return self.theta.copy()
 
-
 def adjoint(U: np.ndarray) -> np.ndarray:
     """
     Compute the adjoint (conjugate transpose) of an operator.
@@ -253,7 +259,6 @@ def adjoint(U: np.ndarray) -> np.ndarray:
     Equivalent to np.conj(U.T) but more explicit.
     """
     return U.conj().T
-
 
 def fidelity_distance(rho: np.ndarray, sigma: np.ndarray) -> float:
     """
@@ -280,7 +285,6 @@ def fidelity_distance(rho: np.ndarray, sigma: np.ndarray) -> float:
     product = sqrt_rho @ sigma @ sqrt_rho
     return np.trace(scipy.linalg.sqrtm(product)).real
 
-
 # ─── Unit Tests ──────────────────────────────────────────────────────────────
 
 def test_phase_estimation():
@@ -298,7 +302,6 @@ def test_phase_estimation():
 
     print(f"  PASS Phase estimation: phi_true={phi_true:.4f}, phi_est={phi_est:.4f}")
 
-
 def test_adaptive_fourier():
     """Test adaptive QFT on an identity rotation."""
     aft = AdaptiveFourierTransform(3)
@@ -308,7 +311,6 @@ def test_adaptive_fourier():
     output = aft.apply(test_state)
     assert abs(np.linalg.norm(output) - 1.0) < 1e-10
     print(f"  PASS Adaptive QFT: norm preserved = {np.linalg.norm(output):.6f}")
-
 
 if __name__ == "__main__":
     print("=" * 48)

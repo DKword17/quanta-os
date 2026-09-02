@@ -1,16 +1,24 @@
 /*
  * rt_control.c
  * Управление импульсами в реальном времени / Real-time pulse control
- *
  * Quanta OS — FPGA pulse sequencer & DAC/ADC control
- * 
  * Особенности:
  *   - циклы в реальном времени (sub-μs latency)
  *   - прямая работа с DMA для AWG
  *   - минимальные накладные расходы, никаких malloc
  *   - прямая работа с регистрами Xilinx / Intel FPGA
- *
- * (c) 2026 Dmitry Volkov — низкоуровневая часть
+ * (c) 2026 DKword17 <19832535010@163.com> — низкоуровневая часть
+ */
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
  */
 
 #include <stdint.h>
@@ -67,10 +75,8 @@ static int  dma_wait(uint32_t timeout_us);
 /*
  * pulse_sequence — главная функция
  * формирует и отправляет последовательность импульсов
- *
  * cfg: массив конфигураций
  * n: количество импульсов
- *
  * return: 0 ok, -1 ошибка
  */
 int
@@ -122,7 +128,6 @@ pulse_validate(const pulse_cfg_t *cfg)
 /*
  * заполнение гауссова импульса с коррекцией DRAG
  * Использует предвычисленный LUT размером 1024 точки
- *
  * DRAG-коррекция: I → I - α·dQ/dt, Q → Q + α·dI/dt
  * где α — коэффициент коррекции (обычно 0.1-0.5)
  */

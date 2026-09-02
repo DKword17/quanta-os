@@ -4,6 +4,17 @@
  * 目标：≤64KB 二进制，可直接烧入 FPGA 软核
  */
 
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -80,15 +91,15 @@ typedef struct {
 void calibrate_rabi(topology_t *topo, pulse_t *pulses) {
     for (uint32_t i = 0; i < topo->qubit_count; i++) {
         qubit_t *q = &topo->qubits[i];
-        
+
         /* 基准频率：qubit 谐振频率 */
         float drive_freq = 0.0f;  /* 从硬件读取 */
-        
+
         /* π 脉冲校准：扫幅度找布洛赫球翻转 */
         float amplitude = 0.0f;
         float pi_amplitude = 0.0f;
         float max_population = 0.0f;
-        
+
         for (int step = 0; step < 256; step++) {
             amplitude = (float)step / 256.0f;
             float population = measure_state(i);
@@ -97,11 +108,11 @@ void calibrate_rabi(topology_t *topo, pulse_t *pulses) {
                 pi_amplitude = amplitude;
             }
         }
-        
+
         /* 注册 X 门 (π 脉冲) */
         pulses[GATE_X].amplitude = pi_amplitude;
         pulses[GATE_X].duration_ns = 40.0f;  /* 典型值 40ns */
-        
+
         /* 注册 Hadamard (π/2 脉冲 + 相移) */
         pulses[GATE_H].amplitude = pi_amplitude * 0.5f;
         pulses[GATE_H].duration_ns = 20.0f;
@@ -116,7 +127,7 @@ void calibrate_rabi(topology_t *topo, pulse_t *pulses) {
 void measure_coherence(qubit_t *q) {
     float t1_samples[64];
     float t2_samples[64];
-    
+
     /* T1 测量 */
     for (int i = 0; i < 64; i++) {
         float delay = (float)i * 2000.0f;  /* 步进 2μs */
@@ -125,7 +136,7 @@ void measure_coherence(qubit_t *q) {
         t1_samples[i] = measure_state(q->id);
     }
     q->t1_us = fit_exponential_decay(t1_samples, 64);
-    
+
     /* T2 测量 (Ramsey 干涉) */
     for (int i = 0; i < 64; i++) {
         float delay = (float)i * 1000.0f;
@@ -153,7 +164,7 @@ typedef struct {
 mapping_t* solve_topology_mapping(topology_t *topo, uint32_t n_logical) {
     mapping_t *map = (mapping_t*)malloc(n_logical * sizeof(mapping_t));
     if (!map) return NULL;
-    
+
     /* 构建耦合强度矩阵 */
     float **w = (float**)malloc(topo->qubit_count * sizeof(float*));
     for (uint32_t i = 0; i < topo->qubit_count; i++) {
@@ -164,14 +175,14 @@ mapping_t* solve_topology_mapping(topology_t *topo, uint32_t n_logical) {
         w[e->qubit_a][e->qubit_b] = e->cx_fidelity;
         w[e->qubit_b][e->qubit_a] = e->cx_fidelity;
     }
-    
+
     /* Goemans-Williamson SDP relaxation (简化版) */
     /* 实际实现在 gate_discovery.c 中 */
-    
+
     /* 清理 */
     for (uint32_t i = 0; i < topo->qubit_count; i++) free(w[i]);
     free(w);
-    
+
     return map;
 }
 
@@ -193,13 +204,13 @@ syscall_t syscall_table[256] = {0};
  */
 void quanta_os_main(void) {
     os_state_t state = {0};
-    
+
     /* Phase 1: 硬件发现 */
     state.topology.qubit_count = probe_qubit_count();
     state.topology.qubits = (qubit_t*)malloc(
         state.topology.qubit_count * sizeof(qubit_t)
     );
-    
+
     /* Phase 2: 自校准 */
     for (uint32_t i = 0; i < state.topology.qubit_count; i++) {
         qubit_t *q = &state.topology.qubits[i];
@@ -208,23 +219,23 @@ void quanta_os_main(void) {
     }
     calibrate_rabi(&state.topology, state.pulse_table);
     measure_readout_fidelity(&state.topology);
-    
+
     /* Phase 3: 噪声建模 */
     build_noise_model(&state.topology, state.noise_params);
-    
+
     /* Phase 4: 拓扑自映射 */
     state.topology.edges = discover_connectivity(&state.topology);
     state.topology.edge_count = count_edges(&state.topology);
-    
+
     /* Phase 5: 注册系统调用 */
     syscall_table[SYSCALL_EXECUTE_CIRCUIT]  = execute_circuit_handler;
     syscall_table[SYSCALL_MEASURE_STATE]    = measure_state_handler;
     syscall_table[SYSCALL_GET_TOPOLOGY]     = get_topology_handler;
     syscall_table[SYSCALL_GET_CALIBRATION]  = get_calibration_handler;
     syscall_table[SYSCALL_SELF_EVOLVE]      = self_evolve_handler;
-    
+
     /* Phase 6: 进入自演化主循环 */
     self_evolution_loop(&state);
-    
+
     /* unreachable */
 }

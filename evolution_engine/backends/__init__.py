@@ -4,13 +4,22 @@ evolution-engine/backends/trapped_ion_backend.py
 覆盖: IonQ, Quantinuum (Honeywell), 启科量子
 """
 
-from ..vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
 
+from ..vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
 
 class TrappedIonBackend:
     """
     离子阱量子后端
-    
+
     特征:
     - 全连通拓扑 (all-to-all)
     - Molmer-Sorensen 门做原生纠缠
@@ -18,7 +27,7 @@ class TrappedIonBackend:
     - T2 长达秒级
     - 门时间 ~100-300μs (快于超导1000x慢)
     """
-    
+
     VENDORS = {
         'ionq': [
             {'name': 'Aria',  'qubits': 25, 'laser': True,  'gate_us': 200},
@@ -33,7 +42,7 @@ class TrappedIonBackend:
             {'name': 'AbaQ', 'qubits': 16, 'laser': True, 'gate_us': 250},
         ],
     }
-    
+
     def __init__(self, vendor='ionq', model='Forte'):
         self.vendor = vendor
         self.model = model
@@ -45,7 +54,7 @@ class TrappedIonBackend:
         self._resolve_model()
         self._build_topology()
         self.compiler = VariationalQuantumCompiler(self.topology)
-    
+
     def _resolve_model(self):
         for entry in self.VENDORS.get(self.vendor, []):
             if entry['name'].lower() == self.model.lower():
@@ -56,7 +65,7 @@ class TrappedIonBackend:
         self.n_ions = 36
         self.gate_time_us = 180
         self.model = 'Forte'
-    
+
     def _build_topology(self):
         qubits = [QubitParams(id=i, t1_us=1e6, t2_us=5e5, 
                                readout_fidelity=0.995) for i in range(self.n_ions)]
@@ -66,7 +75,7 @@ class TrappedIonBackend:
             for j in range(i + 1, self.n_ions):
                 edges.append(EdgeParams(i, j, cx_fidelity=0.997))
         self.topology = Topology(qubits=qubits, edges=edges)
-    
+
     def ms_gate_decomposition(self, qubits, angle):
         """
         Molmer-Sorensen 多体纠缠门
@@ -81,7 +90,7 @@ class TrappedIonBackend:
             'native': True,
             'gate_time_us': self.gate_time_us * 2,
         }
-    
+
     @property
     def spec(self):
         return {
@@ -95,10 +104,9 @@ class TrappedIonBackend:
             'requires_laser': self.laser_based,
         }
 
-
 class PhotonicBackend:
     """光量子后端 (Xanadu, PsiQuantum, 图灵量子, 玻色量子)"""
-    
+
     VENDORS = {
         'xanadu': [
             {'name': 'X8',      'modes': 8,   'type': 'squeezed'},
@@ -115,14 +123,14 @@ class PhotonicBackend:
             {'name': 'Basilisk', 'modes': 25, 'type': 'squeezed'},
         ],
     }
-    
+
     def __init__(self, vendor='xanadu', model='Aurora'):
         self.vendor = vendor
         self.model = model
         self.n_modes = 0
         self.photonic_type = 'squeezed'
         self._resolve_model()
-    
+
     def _resolve_model(self):
         for entry in self.VENDORS.get(self.vendor, []):
             if entry['name'].lower() == self.model.lower():
@@ -131,7 +139,7 @@ class PhotonicBackend:
                 return
         self.n_modes = 1000
         self.model = 'Aurora'
-    
+
     @property
     def spec(self):
         return {
@@ -143,10 +151,9 @@ class PhotonicBackend:
             'topology': 'all-to-all_via_switches',
         }
 
-
 class NeutralAtomBackend:
     """中性原子/光镊后端 (QuEra, Pasqal, Atom Computing)"""
-    
+
     VENDORS = {
         'quera': [
             {'name': 'Aquila',   'qubits': 256, 'reconfigurable': True},
@@ -156,21 +163,21 @@ class NeutralAtomBackend:
             {'name': 'Fresnel', 'qubits': 200, 'reconfigurable': True},
         ],
     }
-    
+
     def __init__(self, vendor='quera', model='Aquila v2'):
         self.vendor = vendor
         self.model = model
         self.n_atoms = 256
         self.reconfigurable = True
         self._resolve_model()
-    
+
     def _resolve_model(self):
         for entry in self.VENDORS.get(self.vendor, []):
             if entry['name'].lower() == self.model.lower():
                 self.n_atoms = entry['qubits']
                 self.reconfigurable = entry['reconfigurable']
                 return
-    
+
     @property
     def spec(self):
         return {
@@ -182,7 +189,6 @@ class NeutralAtomBackend:
             'requires_vacuum': True,
             'requires_laser': True,
         }
-
 
 class SiliconSpinBackend:
     """硅基自旋后端 (Intel, Diraq, Equal1)"""
@@ -197,21 +203,21 @@ class SiliconSpinBackend:
             {'name': 'EQ1-2', 'qubits': 8, 'temp_mk': 300},
         ],
     }
-    
+
     def __init__(self, vendor='intel', model='Tunnel Falls'):
         self.vendor = vendor
         self.model = model
         self.n_dots = 0
         self.temp_mk = 100
         self._resolve_model()
-    
+
     def _resolve_model(self):
         for entry in self.VENDORS.get(self.vendor, []):
             if entry['name'].lower() == self.model.lower():
                 self.n_dots = entry['qubits']
                 self.temp_mk = entry['temp_mk']
                 return
-    
+
     @property
     def spec(self):
         return {
@@ -221,7 +227,6 @@ class SiliconSpinBackend:
             'temp_mk': self.temp_mk,
             'topology': 'nearest_neighbor',
         }
-
 
 class NVCenterBackend:
     """NV 色心后端 (Quantum Brilliance, 国仪量子)"""
@@ -233,19 +238,19 @@ class NVCenterBackend:
             {'name': 'QP-G', 'qubits': 12},
         ],
     }
-    
+
     def __init__(self, vendor='quantum_brilliance', model='QB Cluster'):
         self.vendor = vendor
         self.model = model
         self.n_centers = 50
         self._resolve_model()
-    
+
     def _resolve_model(self):
         for entry in self.VENDORS.get(self.vendor, []):
             if entry['name'].lower() == self.model.lower():
                 self.n_centers = entry['qubits']
                 return
-    
+
     @property
     def spec(self):
         return {

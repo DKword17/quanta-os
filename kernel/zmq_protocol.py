@@ -11,6 +11,16 @@ Transport: ZeroMQ (REQ/REP + PUB/SUB)
 Serialization: JSON
 """
 
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
+
 import json
 import struct
 import time
@@ -18,13 +28,11 @@ from dataclasses import dataclass, field, asdict
 from enum import IntEnum
 from typing import Optional, Dict, Any, List
 
-
 # ============================================================
 # Message Protocol
 # ============================================================
 
 PROTOCOL_VERSION = "1.0.0"
-
 
 class MsgType(IntEnum):
     HEARTBEAT       = 0x01
@@ -49,7 +57,6 @@ class MsgType(IntEnum):
     PUSH_EVENT      = 0x90
     ERROR           = 0xFF
 
-
 class BackendType(IntEnum):
     SUPERCONDUCTING = 0x01
     TRAPPED_ION     = 0x02
@@ -59,7 +66,6 @@ class BackendType(IntEnum):
     NV_CENTER       = 0x06
     TOPOLOGICAL     = 0x07
 
-
 class TaskStatus(IntEnum):
     QUEUED      = 0
     COMPILING   = 1
@@ -67,7 +73,6 @@ class TaskStatus(IntEnum):
     COMPLETED   = 3
     FAILED      = 4
     CANCELLED   = 5
-
 
 class ErrorCode(IntEnum):
     SUCCESS             = 0
@@ -81,11 +86,9 @@ class ErrorCode(IntEnum):
     TIMEOUT             = 1008
     INTERNAL_ERROR      = 9999
 
-
 # ============================================================
 # Message Data Structures
 # ============================================================
-
 
 @dataclass
 class MessageHeader:
@@ -114,7 +117,6 @@ class MessageHeader:
             backend=backend,
         )
 
-
 @dataclass
 class LoginRequest:
     """Client login request."""
@@ -122,7 +124,6 @@ class LoginRequest:
     password: str
     client_version: str = PROTOCOL_VERSION
     capabilities: List[str] = field(default_factory=list)
-
 
 @dataclass
 class LoginResponse:
@@ -132,7 +133,6 @@ class LoginResponse:
     session_id: str = ""
     allowed_backends: List[int] = field(default_factory=list)
     error: str = ""
-
 
 @dataclass
 class CircuitTask:
@@ -144,7 +144,6 @@ class CircuitTask:
     backend: int = 0
     qubits: List[int] = field(default_factory=list)
     params: Dict[str, float] = field(default_factory=dict)
-
 
 @dataclass
 class TaskResult:
@@ -159,7 +158,6 @@ class TaskResult:
     error_message: str = ""
     calibration_snapshot: Dict = field(default_factory=dict)
 
-
 @dataclass
 class ChipInfo:
     """Backend chip information."""
@@ -171,7 +169,6 @@ class ChipInfo:
     gate_fidelity: Dict[str, float]
     calibration_time: str
     is_available: bool = True
-
 
 @dataclass
 class SessionContext:
@@ -185,11 +182,9 @@ class SessionContext:
     max_iterations: int = 200
     convergence_threshold: float = 1e-6
 
-
 # ============================================================
 # ZMQ Protocol (Pack / Unpack)
 # ============================================================
-
 
 class ZMQProtocol:
     """
@@ -239,11 +234,9 @@ class ZMQProtocol:
         body = asdict(result)
         return ZMQProtocol.pack(header, body)
 
-
 # ============================================================
 # Hardware-specific Configuration
 # ============================================================
-
 
 @dataclass
 class SuperconductingPulseConfig:
@@ -256,7 +249,6 @@ class SuperconductingPulseConfig:
     frequency_mhz: float
     shape: str = "DRAG"
 
-
 @dataclass
 class TrappedIonLaserConfig:
     """Trapped ion laser pulse configuration."""
@@ -267,7 +259,6 @@ class TrappedIonLaserConfig:
     duration_us: int
     beam_waist_um: float
 
-
 @dataclass
 class PhotonicOpticalConfig:
     """Photonic component configuration."""
@@ -276,7 +267,6 @@ class PhotonicOpticalConfig:
     transmissivity: float = 0.5
     phase_shift: float = 0.0
     squeezing_db: float = 0.0
-
 
 @dataclass
 class NeutralAtomLaserConfig:
@@ -287,11 +277,9 @@ class NeutralAtomLaserConfig:
     rabi_frequency_mhz: float
     duration_us: int
 
-
 # ============================================================
 # Event Routing
 # ============================================================
-
 
 class EventSystem:
     """ZMQ PUB/SUB event routing helper."""

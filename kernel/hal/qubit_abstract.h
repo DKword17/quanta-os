@@ -1,13 +1,23 @@
 /**
  * kernel/hal/qubit_abstract.h
  * Quanta OS — 量子比特硬件抽象层 (HAL)
- *
  * 定义所有量子计算架构的通用接口。
  * 每家芯片商实现一个 hal_backend_t，注册到全局后端表。
  */
 
 #ifndef QUANTA_HAL_H
 #define QUANTA_HAL_H
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
+ */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -16,35 +26,35 @@
 
 typedef enum {
     QUBIT_TYPE_UNKNOWN = 0,
-    
+
     /* 超导量子比特 (Superconducting) */
     QUBIT_TYPE_TRANSMON,        /* 传输子 (IBM, Google, Rigetti, 本源量子) */
     QUBIT_TYPE_XMON,            /* Xmon (Google) */
     QUBIT_TYPE_FLUXONIUM,       /* 磁通量子比特 */
     QUBIT_TYPE_FLUX_QUBIT,      /* 磁通量子比特 (中科院/国盾) */
-    
+
     /* 离子阱 (Trapped Ion) */
     QUBIT_TYPE_TRAPPED_ION_LASER,    /* 激光驱动 (IonQ) */
     QUBIT_TYPE_TRAPPED_ION_MICROWAVE, /* 微波驱动 (Quantinuum/Honeywell) */
-    
+
     /* 光量子 (Photonic) */
     QUBIT_TYPE_PHOTONIC_SQUEEZED,    /* 压缩态 (Xanadu) */
     QUBIT_TYPE_PHOTONIC_SINGLE,      /* 单光子 (PsiQuantum, 图灵量子) */
-    
+
     /* 中性原子 (Neutral Atom) */
     QUBIT_TYPE_RYDBERG_LASER,        /* Rydberg 激光 (QuEra, Pasqal) */
     QUBIT_TYPE_OPTICAL_TWEEZER,      /* 光镊 (Atom Computing) */
-    
+
     /* 硅基自旋 (Silicon Spin) */
     QUBIT_TYPE_SI_DOT,               /* Si/SiGe 量子点 (Intel) */
     QUBIT_TYPE_DONOR,                /* 施主量子比特 (Diraq) */
-    
+
     /* 金刚石NV色心 (NV Center) */
     QUBIT_TYPE_NV_CENTER,            /* 室温 NV 色心 (Quantum Brilliance, 国仪量子) */
-    
+
     /* 拓扑 (Topological) */
     QUBIT_TYPE_MAJORANA,             /* Majorana 零模 (Microsoft Station Q) */
-    
+
     /* 其他 */
     QUBIT_TYPE_NMR,                  /* 核磁共振 (实验室) */
     QUBIT_TYPE_COUNT
@@ -57,33 +67,33 @@ typedef struct {
     qubit_physical_type_t qubit_type;
     uint32_t           max_qubits;           /* 最大 qubit 数 */
     uint32_t           n_physical_qubits;    /* 当前物理 qubit 数 */
-    
+
     /* 操作温度 */
     float              operating_temp_mk;    /* mK (0 = 室温) */
-    
+
     /* 门集特征 */
     uint32_t           native_gate_count;
     float              typical_1q_fidelity;  /* 单量子门保真度 */
     float              typical_2q_fidelity;  /* 两量子门保真度 */
     float              readout_fidelity;     /* 读出保真度 */
-    
+
     /* 相干时间 */
     float              t1_us;               /* 能量弛豫 (μs) */
     float              t2_us;               /* 相位弛豫 (μs) */
-    
+
     /* 控制方式 */
     uint8_t            control_channels_per_qubit; /* 控制通道数 */
     float              gate_speed_ns;        /* 单门典型耗时 (ns) */
-    
+
     /* 拓扑 */
     uint8_t            max_connectivity;     /* 最大连通度 */
     uint8_t            is_all_to_all;        /* 全连通? (离子阱) */
-    
+
     /* 特殊能力 */
     uint8_t            supports_mid_circuit_measurement;
     uint8_t            supports_feedforward; /* 实时反馈 */
     uint8_t            supports_quantum_networking; /* 量子网络 */
-    
+
     /* 运行环境 */
     uint8_t            requires_dilution_fridge;  /* 需要稀释制冷机? */
     uint8_t            requires_vacuum;           /* 需要真空? */
@@ -103,7 +113,7 @@ typedef enum {
     NATIVE_GATE_T,         /* T (π/4) */
     NATIVE_GATE_SX,        /* Sqrt(X) */
     NATIVE_GATE_U3,        /* 任意单量子门 U(θ,φ,λ) */
-    
+
     /* 两量子门 */
     NATIVE_GATE_CX,        /* CNOT (受控X) */
     NATIVE_GATE_CZ,        /* CZ (受控Z) */
@@ -115,20 +125,20 @@ typedef enum {
     NATIVE_GATE_ZZ,        /* ZZ 交互 */
     NATIVE_GATE_MS,        /* Molmer-Sorensen (离子阱多体) */
     NATIVE_GATE_CCZ,       /* Toffoli (CCZ) */
-    
+
     /* 测量 */
     NATIVE_GATE_MEASURE,   /* 投影测量 */
     NATIVE_GATE_MEASURE_RESET, /* 测量+复位 */
-    
+
     /* 光量子专用 */
     NATIVE_GATE_SQZ,       /* 压缩操作 (Xanadu) */
     NATIVE_GATE_BS,        /* 分束器 (photonic) */
     NATIVE_GATE_PS,        /* 相移器 (photonic) */
-    
+
     /* 控制 */
     NATIVE_GATE_RESET,     /* 复位到|0⟩ */
     NATIVE_GATE_BARRIER,   /* 同步屏障 */
-    
+
     NATIVE_GATE_COUNT
 } native_gate_id_t;
 
@@ -165,29 +175,29 @@ typedef struct {
 typedef struct quanta_backend {
     const char *name;                       /* 后端名称，如 "ibm_superconducting" */
     architecture_spec_t spec;               /* 架构规格 */
-    
+
     /* 生命周期 */
     int  (*init)(struct quanta_backend *self);         /* 硬件初始化 */
     int  (*calibrate)(struct quanta_backend *self);    /* 全芯片校准 */
     void (*shutdown)(struct quanta_backend *self);     /* 安全关闭 */
-    
+
     /* 脉冲执行 */
     int  (*apply_pulse)(struct quanta_backend *self, const pulse_profile_t *pulse);
     int  (*apply_pulse_sequence)(struct quanta_backend *self, const pulse_profile_t *seq, uint32_t n);
-    
+
     /* 测量 */
     int  (*measure)(struct quanta_backend *self, uint32_t qubit, uint32_t *result);
     int  (*measure_all)(struct quanta_backend *self, uint32_t *results, uint32_t n);
-    
+
     /* 校准更新 */
     int  (*update_calibration)(struct quanta_backend *self, uint32_t qubit, qubit_calibration_t *cal);
-    
+
     /* 拓扑信息 */
     int  (*get_topology)(struct quanta_backend *self, uint32_t **coupling_map, uint32_t *n_edges);
-    
+
     /* 自演化钩子 */
     int  (*self_evolve_step)(struct quanta_backend *self, float feedback_fidelity);
-    
+
     /* 私有数据 */
     void *priv;
 } quanta_backend_t;

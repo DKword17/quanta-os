@@ -1,50 +1,45 @@
 #!/usr/bin/env python3
 """
-quanta_os.py 鈥?Quanta OS Unified Entry Point
+quanta_os.py - Quanta OS unified entry point.
 
 Usage:
     # Interactive Python
     >>> from quanta_os import QOS
-    >>> qos = QOS(backend="wukong_180")
-    >>> result = qos.compile("circuit.qasm")
-    
+    >>> qos = QOS(backend="generic_simulator")
+    >>> qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[2] q; h q[0]; cx q[0], q[1]; measure q[0]; measure q[1];'
+    >>> result = qos.compile(qasm)
+    >>> print(result.final_ops)
+
     # CLI
     $ python quanta_os.py compile circuit.qasm --backend wukong_180
-    $ python quanta_os.py run --shots 4096
     $ python quanta_os.py calibrate --qubit 0
+    $ python quanta_os.py list-backends
 
 Architecture:
-    This is the top-level entry point for the Quanta OS system.
-    It ties together the kernel, compiler, scheduler, calibration,
-    and protocol subsystems into a single coherent API.
-
-    Under the hood, it:
-        1. Detects available backends (local QPUs, cloud endpoints)
-        2. Initializes the compilation pipeline
-        3. Boots the scheduler with detected resources
-        4. Optionally runs calibration on available qubits
-        5. Handles job lifecycle (submit 鈫?compile 鈫?execute 鈫?results)
-
-    Design philosophy: 
-        "Make the simple case fast, and the complex case possible."
-        鈥?Alex Chen, Quanta OS Architect
-
-(c) 2026 Alex Chen 鈥?Quanta OS Project Lead, San Francisco
+    Top-level entry point for Quanta OS. Ties together the kernel compiler,
+    scheduler and calibration subsystems behind a single coherent API.
 """
+
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
 
 from __future__ import annotations
 
 import argparse
 import json
 import logging
-import os
 import sys
 import time
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-# Setup logging 鈥?production systems should use structured logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -52,21 +47,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("quanta")
 
-
 class QuantaOSError(Exception):
     """Base exception for all Quanta OS errors."""
-    pass
-
 
 class BackendUnavailableError(QuantaOSError):
     """Raised when the requested backend is not available."""
-    pass
-
 
 class CompilationError(QuantaOSError):
     """Raised when circuit compilation fails."""
-    pass
-
 
 @dataclass
 class CompileResult:
@@ -80,19 +68,9 @@ class CompileResult:
     final_depth: int
     compile_time_ms: float
 
-
-@dataclass
-class RunResult:
-    """Full execution result including compilation and measurement."""
-    compile_result: CompileResult
-    counts: Dict[str, int]
-    execution_time_ms: float
-    shots: int
-    fidelity_estimate: float = 0.0
-
-
-# Known backend registry 鈥?extensible via plugins
-BACKEND_REGISTRY = {
+# Known backend registry. Keys map to `kernel.circuit_compiler.get_backend()`
+# names via _BACKEND_IMPL (any other key falls back to the generic simulator).
+BACKEND_REGISTRY: Dict[str, Dict[str, Any]] = {
     "wukong_180": {
         "name": "origin_wukong_180",
         "type": "superconducting",
@@ -111,7 +89,7 @@ BACKEND_REGISTRY = {
         "name": "xanadu_borealis",
         "type": "photonic",
         "qubits": 216,
-        "description": "Xanadu Borealis 216-squeezed-qumode photonic QPU",
+        "description": "Xanadu Borealis 216-qumode photonic QPU",
         "provider": "Xanadu",
     },
     "generic_simulator": {
@@ -123,19 +101,44 @@ BACKEND_REGISTRY = {
     },
 }
 
+# registry key -> kernel backend name understood by compile_qasm()
+_BACKEND_IMPL = {
+    "wukong_180": "wukong_180",
+    "quantinuum_h2": "h2",
+    "borealis": "borealis",
+}
+
+def _resolve_backend(backend: Optional[str]) -> str:
+    """Map a registry key to the kernel backend name (generic fallback)."""
+    if not backend:
+        return "generic_simulator"
+    if backend not in BACKEND_REGISTRY:
+        raise BackendUnavailableError(
+            f"Unknown backend '{backend}'. Known: {', '.join(BACKEND_REGISTRY)}"
+        )
+    return _BACKEND_IMPL.get(backend, "generic_simulator")
+
+def _kernel_compile(qasm_source: str, backend_impl: str) -> dict:
+    """Compile through kernel.circuit_compiler (lazy import)."""
+    try:
+        from kernel.circuit_compiler import compile_qasm, CircuitExporter
+    except Exception as exc:  # pragma: no cover - environment guard
+        raise QuantaOSError(
+            "kernel package not importable; run from the quanta-os repo root"
+        ) from exc
+    return compile_qasm(qasm_source, backend_impl), CircuitExporter
 
 class QOS:
     """
-    Quanta OS 鈥?Main entry point.
-    
-    This is your one-stop shop for everything quantum.
-    Create one instance and use it for the lifetime of your application.
-    
+    Quanta OS main entry point.
+
+    Create one instance and reuse it for the lifetime of the application.
+
     Example:
         >>> qos = QOS()
         >>> qos.list_backends()
-        ['wukong_180', 'quantinuum_h2', 'generic_simulator']
-        
+        ['wukong_180', 'quantinuum_h2', 'borealis', 'generic_simulator']
+
         >>> qasm = '''
         ... OPENQASM 3.0;
         ... qubit[2] q;
@@ -145,147 +148,175 @@ class QOS:
         ... measure q[1];
         ... '''
         >>> result = qos.compile(qasm, backend="generic_simulator")
-        
+
         >>> print(result.final_ops)
     """
-    
-    def __init__(self, backend: str = "generic_simulator",
-                 auto_init: bool = True):
-        """
-        Initialize the Quanta OS runtime.
-        
-        Args:
-            backend: Default backend to use. Auto-detected if not specified.
-            auto_init: Whether to auto-discover backends and run init.
-        """
+
+    def __init__(self, backend: str = "generic_simulator"):
         self._default_backend = backend
-        self._initialized = False
-        self._scheduler = None
-        
-        if auto_init:
-            self._initialize()
-    
-    def _initialize(self):
-        """Internal initialization 鈥?discovers resources, boots subsystems."""
-        start = time.monotonic()
-        
-        # Discover available backends
-        available = self._discover_backends()
-        logger.info(f"Discovered {len(available)} backends: "
-                    f"{', '.join(available.keys())}")
-        
-        # Initialize scheduler
-        self._init_scheduler(available)
-        
-        self._initialized = True
-        elapsed = (time.monotonic() - start) * 1000
-        logger.info(f"Quanta OS initialized in {elapsed:.1f} ms "
-                    f"(default backend: {self._default_backend})")
-    
-    def _discover_backends(self) -> Dict[str, Any]:
-        """Discover available backends 鈥?local and cloud."""
-        available = {}
-        
-        # Always available: local simulator
-        available["generic_simulator"] = BACKEND_REGISTRY["generic_simulator"]
-        
-        # Try to detect local backends via PCI/USP probe
-        # (In production, this would call backend_selector)
-        try:
-            from kernel.hal.origin_wukong_bridge import WukongBridge
-            bridge = WukongBridge(mode="local", auto_reconnect=False)
-            if bridge.connect():
-                available["wukong_180"] = BACKEND_REGISTRY["wukong_180"]
-                logger.info("  鈫?Origin Wukong 180 detected (local ZMQ)")
-                bridge._zmq_socket.close()
-        except Exception:
-            logger.debug("  鈫?No local Wukong backend detected")
-        
-        return available
-    
-    def _init_scheduler(self, backends: Dict[str, Any]):
-        """Boot the resource scheduler with discovered backends."""
-        from kernel.resource_scheduler import ResourceScheduler, SchedulerConfig
-        
-        config = SchedulerConfig(
-            max_concurrent_jobs=8,
-            fidelity_utilization_tradeoff=0.3,
-        )
-        self._scheduler = ResourceScheduler(config)
-        
-        for name, info in backends.items():
-            self._scheduler.register_backend(
-                name=name,
-                n_qubits=info["qubits"],
-                topology=[],
-                gate_set=[],
+        if backend not in BACKEND_REGISTRY:
+            raise BackendUnavailableError(
+                f"Unknown backend '{backend}'. Known: {', '.join(BACKEND_REGISTRY)}"
             )
-    
-    # 鈹€鈹€ Public API 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-    
-    def list_backends(self) -> List[Dict[str, Any]]:
-        """List all available backends with their capabilities."""
-        return [
-            {"id": k, **v}
-            for k, v in BACKEND_REGISTRY.items()
-        ]
-    
-    def compile(self, qasm_source: str,
-                backend: Optional[str] = None,
-                optimization_level: int = 2) -> CompileResult:
+        logger.info("Quanta OS ready (default backend: %s)", backend)
+
+    def list_backends(self) -> List[str]:
+        """List all known backend registry keys."""
+        return list(BACKEND_REGISTRY.keys())
+
+    def backend_info(self, backend: Optional[str] = None) -> Dict[str, Any]:
+        """Return metadata for a backend (defaults to the instance default)."""
+        return dict(BACKEND_REGISTRY[backend or self._default_backend])
+
+    def compile(
+        self,
+        qasm_source: str,
+        backend: Optional[str] = None,
+    ) -> CompileResult:
         """
-        Compile a QASM circuit for a specific backend.
-        
+        Compile an OpenQASM 3.0 circuit for a backend.
+
         Args:
             qasm_source: OpenQASM 3.0 source string.
-            backend: Target backend. Uses default if not specified.
-            optimization_level: 0=no opt, 1=light, 2=aggresive, 3=max.
-        
+            backend: Registry key; falls back to the instance default.
+
         Returns:
-            CompileResult with original stats + compiled output.
-        
+            CompileResult with original/final stats and compiled QASM.
+
         Raises:
-            CompilationError: If the QASM cannot be parsed or compiled.
+            CompilationError: if the QASM cannot be parsed or compiled.
         """
         backend = backend or self._default_backend
-        
+        impl = _resolve_backend(backend)
         start = time.monotonic()
-        
         try:
-            result = compile_qasm(qasm_source, backend)
-        except Exception as e:
+            result, _ = _kernel_compile(qasm_source, impl)
+        except Exception as exc:
             raise CompilationError(
-                f"Compilation failed for backend '{backend}': {e}"
-            ) from e
-        
+                f"Compilation failed for backend '{backend}': {exc}"
+            ) from exc
         elapsed = (time.monotonic() - start) * 1000
-        
-        compiled_qasm = CircuitExporter.to_qasm(result["compiled"])
-        
+
+        compiled = result["compiled"]
+        compiled_qasm = _export_qasm(compiled)
+        stats = result["stats"]
         return CompileResult(
             source=qasm_source,
             compiled=compiled_qasm,
             backend_name=result["backend"].name,
-            original_ops=result["stats"]["original_ops"],
-            final_ops=result["stats"]["final_ops"],
-            original_depth=result["stats"]["original_depth"],
-            final_depth=result["stats"]["final_depth"],
-            compile_time_ms=elapsed,
+            original_ops=stats["original_ops"],
+            final_ops=stats["final_ops"],
+            original_depth=stats["original_depth"],
+            final_depth=stats["final_depth"],
+            compile_time_ms=round(elapsed, 3),
         )
-    
-    def calibrate(self, qubit_id: int = 0,
-                  backend: Optional[str] = None) -> Dict[str, Any]:
+
+    def calibrate(
+        self,
+        qubit_id: int = 0,
+        backend: Optional[str] = None,
+        temperature_mk: float = 15.0,
+    ) -> Dict[str, Any]:
         """
-        Run calibration on a specific qubit.
-        
+        Run the full calibration sequence (T1 -> T2* -> RB) on a qubit.
+
         Args:
-            qubit_id: Index of the qubit to calibrate.
-            backend: Backend to calibrate on.
-        
+            qubit_id: Qubit index on the chip.
+            backend: Registry key (informational for now).
+            temperature_mk: Mixing chamber temperature in mK.
+
         Returns:
-            Calibration results including T1, T2*, gate fidelity.
+            Calibration metrics as a JSON-safe dict.
         """
         try:
-            from kernel.calibration_protocol import (
-    run_full_calibration,
-)
+            from kernel.calibration_protocol import run_full_calibration
+        except Exception as exc:  # pragma: no cover
+            raise QuantaOSError(
+                "kernel package not importable; run from the quanta-os repo root"
+            ) from exc
+
+        backend = backend or self._default_backend
+        logger.info(
+            "Calibrating %s qubit %d at %.1f mK", backend, qubit_id, temperature_mk
+        )
+        result = run_full_calibration(
+            qubit_id=qubit_id, temperature_mk=temperature_mk
+        )
+        from dataclasses import asdict
+
+        payload = asdict(result)
+        payload["backend"] = backend
+        return payload
+
+def _export_qasm(circuit: Any) -> str:
+    """Serialize a compiled circuit back to OpenQASM 3.0."""
+    try:
+        from kernel.circuit_compiler import CircuitExporter
+    except Exception as exc:  # pragma: no cover
+        raise QuantaOSError("kernel not importable") from exc
+    return CircuitExporter.to_qasm(circuit)
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+_SAMPLE_QASM = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[3] q;
+h q[0];
+cx q[0], q[1];
+cx q[1], q[2];
+measure q[0];
+measure q[1];
+measure q[2];"""
+
+def _cmd_compile(args: argparse.Namespace) -> int:
+    if args.file and args.file != "-":
+        with open(args.file, encoding="utf-8") as fh:
+            source = fh.read()
+    else:
+        source = _SAMPLE_QASM
+    qos = QOS(backend=args.backend)
+    result = qos.compile(source)
+    print(f"// backend: {result.backend_name}")
+    print(f"// ops: {result.original_ops} -> {result.final_ops}")
+    print(f"// depth: {result.original_depth} -> {result.final_depth}")
+    print(f"// {result.compile_time_ms} ms")
+    print(result.compiled)
+    return 0
+
+def _cmd_calibrate(args: argparse.Namespace) -> int:
+    qos = QOS(backend=args.backend)
+    payload = qos.calibrate(qubit_id=args.qubit)
+    print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
+    return 0
+
+def _cmd_list(args: argparse.Namespace) -> int:
+    qos = QOS()
+    print("\n".join(qos.list_backends()))
+    return 0
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="quanta_os", description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_compile = sub.add_parser("compile", help="compile a QASM circuit")
+    p_compile.add_argument("file", nargs="?", default="-",
+                           help="path to OpenQASM file (default: built-in sample)")
+    p_compile.add_argument("--backend", default="generic_simulator")
+    p_compile.set_defaults(func=_cmd_compile)
+
+    p_cal = sub.add_parser("calibrate", help="run qubit calibration")
+    p_cal.add_argument("--qubit", type=int, default=0)
+    p_cal.add_argument("--backend", default="generic_simulator")
+    p_cal.set_defaults(func=_cmd_calibrate)
+
+    p_list = sub.add_parser("list-backends", help="list known backends")
+    p_list.set_defaults(func=_cmd_list)
+    return parser
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = build_parser().parse_args(argv)
+    return args.func(args)
+
+if __name__ == "__main__":
+    sys.exit(main())

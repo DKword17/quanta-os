@@ -4,6 +4,17 @@
  * 覆盖: IonQ, Quantinuum (Honeywell), 启科量子
  */
 
+/*
+ * ─────────────────────────────────────────────────────────────
+ * Quanta OS — 版权与出处  |  Copyright & Provenance
+ * 作者    Author   : DKword17 <19832535010@163.com>
+ * 版权    Copyright: (c) 2026 DKword17
+ * 许可证  License  : Apache 2.0（见 LICENSE）
+ * 仓库    Repo     : https://github.com/DKword17/quanta-os
+ * Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+ * ─────────────────────────────────────────────────────────────
+ */
+
 #include "qubit_abstract.h"
 
 typedef struct {
@@ -24,14 +35,14 @@ static const trapped_ion_vendor_t known_trapped_ion[] = {
     {"IonQ",        "IonQ Aria",     25,  1e6, 5e5, 0.9997, 0.996, 200, 1, 1},
     {"IonQ",        "IonQ Forte",    36,  1e6, 5e5, 0.9998, 0.997, 180, 1, 1},
     {"IonQ",        "IonQ Tempo",    64,  1e6, 5e5, 0.9999, 0.998, 150, 1, 1},
-    
+
     /* Quantinuum (Honeywell) — Yb+，CCD 架构，微波+激光 */
     {"Quantinuum",  "H2",            56,  2e6, 1e6, 0.9999, 0.9995, 100, 1, 0},
     {"Quantinuum",  "H1 5.0",        20,  1e6, 1e5, 0.9995, 0.993, 300, 1, 0},
-    
+
     /* 启科量子 */
     {"启科量子", "AbaQ v1",         16,  5e5, 2e5, 0.9990, 0.990, 250, 1, 1},
-    
+
     {NULL}
 };
 

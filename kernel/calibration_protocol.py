@@ -18,9 +18,7 @@ Hardware requirements:
     - Digital Down-Converter (DDC) with 16-bit resolution
     - Temperature stabilization to +/- 5 mK (Bluefors LD-400 or equivalent)
 
-Author:    Klaus Weber
-           Institute for Quantum Information Processing
-           Technical University of Munich
+Author:    DKword17 <19832535010@163.com>
 Date:      2026-07-25
 Version:   2.4.1
 License:   Apache 2.0 (see LICENSE)
@@ -30,6 +28,16 @@ NOTES:
     - Parameter changes may cause qubit detuning.
     - Always run the plausibility check before the first calibration pass.
 """
+
+#
+# ─────────────────────────────────────────────────────────────
+# Quanta OS — 版权与出处  |  Copyright & Provenance
+# 作者    Author   : DKword17 <19832535010@163.com>
+# 版权    Copyright: (c) 2026 DKword17
+# 许可证  License  : Apache 2.0（见 LICENSE）
+# 仓库    Repo     : https://github.com/DKword17/quanta-os
+# Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
+# ─────────────────────────────────────────────────────────────
 
 from __future__ import annotations
 
@@ -52,7 +60,6 @@ FIDELITY_THRESHOLD_MIN: Final[float] = 0.99    # lower bound for CZ gate
 STANDARD_MEASUREMENT_REPEATS: Final[int] = 1024
 TEMPERATURE_STABILITY_MK: Final[float] = 50.0  # +/- 50 mK (dilution fridge mixing chamber)
 
-
 # ─── Enums ───────────────────────────────────────────────────────────────────
 
 class QubitTechnology(IntEnum):
@@ -62,7 +69,6 @@ class QubitTechnology(IntEnum):
     XMON          = 3   # planar variant
     QUANTRONIUM   = 4   # high-coherence (3D cavity)
 
-
 class MeasurementState(IntEnum):
     """State of the measurement chain."""
     READY              = 0  # Operational
@@ -70,7 +76,6 @@ class MeasurementState(IntEnum):
     MEASUREMENT_RUNNING = 2
     ERROR              = 3  # General error
     TEMPERATURE_WARNING = 4  # Temperature deviation detected
-
 
 # ─── Data Structures ─────────────────────────────────────────────────────────
 
@@ -104,7 +109,6 @@ class ResonatorParameters:
             raise ValueError(f"Total quality factor Q_l = {Q_l_measured:.1f} — faulty measurement")
 
         self.quadrature_checksum = Q_l_measured
-
 
 @dataclass
 class CalibrationResult:
@@ -141,7 +145,6 @@ class CalibrationResult:
             and self.gate_fidelity_cz >= FIDELITY_THRESHOLD_MIN
         )
 
-
 # ─── Base Class ──────────────────────────────────────────────────────────────
 
 class CalibrationProtocol(abc.ABC):
@@ -176,7 +179,6 @@ class CalibrationProtocol(abc.ABC):
     def run(self) -> CalibrationResult:
         """Run the full calibration cycle."""
         ...
-
 
 # ─── T1 Measurement (Inversion Recovery) ─────────────────────────────────────
 
@@ -237,7 +239,6 @@ class T1Measurement(CalibrationProtocol):
         self._retries = 0
         return T1_est
 
-
 # ─── T2* Measurement (Ramsey Interferometry) ─────────────────────────────────
 
 class T2StarMeasurement(CalibrationProtocol):
@@ -283,7 +284,6 @@ class T2StarMeasurement(CalibrationProtocol):
 
         return T2_est, Df_est
 
-
 # ─── Randomized Benchmarking ─────────────────────────────────────────────────
 
 class RandomizedBenchmarking(CalibrationProtocol):
@@ -316,7 +316,6 @@ class RandomizedBenchmarking(CalibrationProtocol):
         F_avg = 1 - (1 - p_fit) * 0.5  # d = 4 for two-qubit Clifford
 
         return F_avg
-
 
 # ─── Full Calibration Entry Point ────────────────────────────────────────────
 
@@ -376,7 +375,6 @@ def run_full_calibration(
           f"T1={t1_val*1e6:.0f} us, T2*={t2_val*1e6:.0f} us, "
           f"F_CZ={fidelity:.5f}")
     return result
-
 
 # ─── Main (Test Pass) ────────────────────────────────────────────────────────
 
