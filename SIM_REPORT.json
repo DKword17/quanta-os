@@ -1,0 +1,211 @@
+{
+  "platform": {
+    "cpu": "Intel(R) Core(TM) i9-14900HX",
+    "cores": 24,
+    "python": "3.14.7"
+  },
+  "timestamp": "2026-09-02T23:03:33",
+  "backend_version": "v1",
+  "compile": {
+    "per_backend": [
+      {
+        "backend": "wukong_180",
+        "qubits": 180,
+        "circuits": {
+          "Bell": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.2515
+          },
+          "GHZ16": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.0729
+          },
+          "QFT12": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.033
+          },
+          "RND50": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.0298
+          }
+        },
+        "throughput_cps": 9382.572755036315
+      },
+      {
+        "backend": "quantinuum_h2",
+        "qubits": 56,
+        "circuits": {
+          "Bell": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.1183
+          },
+          "GHZ16": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.10980000000000001
+          },
+          "QFT12": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.1071
+          },
+          "RND50": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.1049
+          }
+        },
+        "throughput_cps": 7971.149223671199
+      },
+      {
+        "backend": "borealis",
+        "qubits": 216,
+        "circuits": {
+          "Bell": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.0309
+          },
+          "GHZ16": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.0295
+          },
+          "QFT12": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.029199999999999997
+          },
+          "RND50": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.028300000000000002
+          }
+        },
+        "throughput_cps": 26803.686894708087
+      },
+      {
+        "backend": "generic_simulator",
+        "qubits": 10,
+        "circuits": {
+          "Bell": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.011300000000000001
+          },
+          "GHZ16": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.010100000000000001
+          },
+          "QFT12": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.01
+          },
+          "RND50": {
+            "ops": 0,
+            "depth": 0,
+            "avg_ms": 0.0098
+          }
+        },
+        "throughput_cps": 71659.03235742258
+      }
+    ],
+    "total_compile_ms": 11.33,
+    "circuits_compiled": 160
+  },
+  "self_evolution": {
+    "n_qubits": 64,
+    "generations": 8,
+    "wall_s": 0.016,
+    "iter_per_gen": 24,
+    "fidelity_curve": [
+      0.98823,
+      0.95187,
+      0.97913,
+      1.0,
+      0.92208,
+      1.0,
+      0.97378,
+      0.96025
+    ],
+    "fidelity_first": 0.98823,
+    "fidelity_last": 0.96025,
+    "improvement_pct": -2.83,
+    "converged": true
+  },
+  "scheduler": {
+    "jobs_submitted": 8000,
+    "backends": 3,
+    "submit_time_s": 0.081,
+    "schedule_cycles": 500,
+    "jobs_scheduled": 8000,
+    "schedule_time_s": 0.034,
+    "jobs_per_sec": 234948.6,
+    "zmq_roundtrips": 50000,
+    "zmq_time_s": 0.475,
+    "zmq_rps": 105301.9
+  },
+  "calibration": {
+    "qubits": 8,
+    "wall_s": 0.002,
+    "avg_t1_us": 34.53,
+    "calibration_rows": [
+      {
+        "qubit": 0,
+        "t1_us": 29.94,
+        "t2_us": 6.67,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 1,
+        "t1_us": 37.28,
+        "t2_us": 18.82,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 2,
+        "t1_us": 37.28,
+        "t2_us": 16.27,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 3,
+        "t1_us": 37.28,
+        "t2_us": 22.16,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 4,
+        "t1_us": 29.94,
+        "t2_us": 23.92,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 5,
+        "t1_us": 29.94,
+        "t2_us": 13.73,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 6,
+        "t1_us": 37.28,
+        "t2_us": 19.8,
+        "mean_fidelity": -1
+      },
+      {
+        "qubit": 7,
+        "t1_us": 37.28,
+        "t2_us": 20.78,
+        "mean_fidelity": -1
+      }
+    ]
+  },
+  "duration_s": 0.69
+}

@@ -18,6 +18,13 @@
  */
 
 #include "hal/qubit_abstract.h"
+#include <string.h>
+
+/* Local helpers, defined below the call sites — forward-declared here so the
+ * calls above are properly prototyped (avoids implicit-declaration warnings). */
+static uint32_t probe_hardware_id(void);
+static qubit_physical_type_t identify_controller_type(void);
+static int read_control_register(uint32_t addr, uint32_t *value);
 
 backend_registry_t g_backends = {0};
 

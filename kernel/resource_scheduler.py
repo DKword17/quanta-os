@@ -82,6 +82,17 @@ class QuantumJob:
     backend_constraint: Optional[str] = None
     optimization_level: int = 2
 
+    def __lt__(self, other: "QuantumJob") -> bool:
+        """Heap ordering: by priority, then submission time (FIFO).
+
+        The priority queues rely on heapq, which needs a total order between
+        jobs. Within a homogeneous-priority queue this yields FIFO order.
+        """
+        if not isinstance(other, QuantumJob):
+            return NotImplemented
+        return (self.priority.value, self.submitted_at, self.job_id) < (
+            other.priority.value, other.submitted_at, other.job_id)
+
 
 @dataclass
 class SchedulerConfig:

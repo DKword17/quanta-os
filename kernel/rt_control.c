@@ -27,6 +27,8 @@
 #include <stdint.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <math.h>
+#include <x86intrin.h>
 
 /* FPGA регистры — отображение в память */
 #define FPGA_BASE        0xA0000000UL
