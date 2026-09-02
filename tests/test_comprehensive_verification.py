@@ -3,11 +3,10 @@
 tests/test_comprehensive_verification.py
 ========================================
 
-Quanta OS 闁?Comprehensive Integration Test Suite
-          闁?Full System Verification Pipeline
+Quanta OS —Comprehensive Integration Test Suite
+          —Full System Verification Pipeline
 
-Author : Priya Sharma, Senior QA Engineer
-          Quanta OS Project, Bangalore, India
+Author : DKword17 <19832535010@163.com>
 Date   : 2026-07-26
 Version: 2.1.0
 
@@ -17,13 +16,13 @@ IMPORTANT NOTE:
     file for the complete list of packages.
 
     This test suite covers the following areas:
-        1.  QASM Parser 闁?correctness of parsing, edge cases, error handling
-        2.  Circuit Compiler 闁?optimisation passes, gate decomposition
-        3.  Scheduler 闁?job submission, queue management, prioritisation
-        4.  Calibration 闁?T1, T2*, Randomized Benchmarking measurements
-        5.  Protocol 闁?ZMQ message packing and unpacking round-trips
-        6.  Backend Selector 闁?hardware detection, auto-registration
-        7.  Integration 闁?end-to-end workflow from QASM to scheduled execution
+        1.  QASM Parser —correctness of parsing, edge cases, error handling
+        2.  Circuit Compiler —optimisation passes, gate decomposition
+        3.  Scheduler —job submission, queue management, prioritisation
+        4.  Calibration —T1, T2*, Randomized Benchmarking measurements
+        5.  Protocol —ZMQ message packing and unpacking round-trips
+        6.  Backend Selector —hardware detection, auto-registration
+        7.  Integration —end-to-end workflow from QASM to scheduled execution
 
     Each test function follows the pattern:
         - Arrange: Set up the test fixtures and preconditions
@@ -89,7 +88,7 @@ class TestResultCollector:
         cat = self._current_category
         self.results.setdefault(cat, {"passed": 0, "failed": 0, "skipped": 0})
         self.results[cat]["passed"] += 1
-        print(f"  闁?[{cat}] {test_name}")
+        print(f"  —[{cat}] {test_name}")
         if details:
             print(f"       {details}")
     
@@ -98,7 +97,7 @@ class TestResultCollector:
         cat = self._current_category
         self.results.setdefault(cat, {"passed": 0, "failed": 0, "skipped": 0})
         self.results[cat]["failed"] += 1
-        print(f"  闁?[{cat}] {test_name}")
+        print(f"  —[{cat}] {test_name}")
         print(f"       FAILURE: {error_message}")
     
     def summary(self) -> Tuple[int, int, int]:
@@ -112,14 +111,14 @@ class TestResultCollector:
         print("=" * 64)
         for cat, res in self.results.items():
             print(f"  {cat:30s}: "
-                  f"闁?{res['passed']:3d}  "
-                  f"闁?{res['failed']:3d}  "
-                  f"闁?{res['skipped']:3d}")
+                  f"—{res['passed']:3d}  "
+                  f"—{res['failed']:3d}  "
+                  f"—{res['skipped']:3d}")
         print("-" * 64)
         print(f"  {'TOTAL':30s}: "
-              f"闁?{total_passed:3d}  "
-              f"闁?{total_failed:3d}  "
-              f"闁?{total_skipped:3d}")
+              f"—{total_passed:3d}  "
+              f"—{total_failed:3d}  "
+              f"—{total_skipped:3d}")
         print("=" * 64)
         
         return total_passed, total_failed, total_skipped
@@ -228,8 +227,8 @@ def test_compiler_gate_cancellation():
     
     qasm_text = """OPENQASM 3.0;
 qubit[2] q;
-h q[0]; h q[0];    // HH = I 闁?should be eliminated
-x q[1]; x q[1];     // XX = I 闁?should be eliminated
+h q[0]; h q[0];    // HH = I —should be eliminated
+x q[1]; x q[1];     // XX = I —should be eliminated
 cx q[0], q[1];
 measure q[0]; measure q[1];"""
     
@@ -239,12 +238,12 @@ measure q[0]; measure q[1];"""
     
     # The optimisation should have eliminated 4 redundant gates
     assert remaining_ops < original_ops, \
-        f"Optimisation did not reduce gate count: {original_ops} 闁?{remaining_ops}"
+        f"Optimisation did not reduce gate count: {original_ops} —{remaining_ops}"
     assert remaining_ops == 3, \
         f"Expected 3 operations after optimisation (CX + 2 measures), got {remaining_ops}"
     
     collector.report_pass("Gate Cancellation",
-                         f"{original_ops} 闁?{remaining_ops} operations "
+                         f"{original_ops} —{remaining_ops} operations "
                          f"(HH + XX eliminated)")
 
 
@@ -395,12 +394,12 @@ def test_calibration_t1_measurement():
     t1_wert = t1.run()
     
     assert t1_wert >= T1_MIN_ACCEPTABLE, \
-        f"T1 measurement {t1_wert*1e6:.1f} 濞撶捈 below minimum {T1_MIN_ACCEPTABLE*1e6:.1f} 濞撶捈"
+        f"T1 measurement {t1_wert*1e6:.1f} µs below minimum {T1_MIN_ACCEPTABLE*1e6:.1f} µs"
     assert t1_wert < 1e-3, \
-        f"T1 measurement {t1_wert*1e6:.1f} 濞撶捈 is unrealistically large"
+        f"T1 measurement {t1_wert*1e6:.1f} µs is unrealistically large"
     
     collector.report_pass("T1 Relaxation",
-                         f"T1 = {t1_wert*1e6:.1f} 濞撶捈 (physically plausible)")
+                         f"T1 = {t1_wert*1e6:.1f} µs (physically plausible)")
 
 
 # ===========================================================================
@@ -411,8 +410,7 @@ def run_all_tests():
     """Execute the complete test suite and print a comprehensive report."""
     
     print("=" * 64)
-    print("  Quanta OS 闁?Comprehensive Verification Suite v2.1")
-    print("  Author: Priya Sharma, QA Engineering, Bangalore")
+    print("  Quanta OS —Comprehensive Verification Suite v2.1")
     print("=" * 64)
     print()
     
@@ -438,10 +436,10 @@ def run_all_tests():
     passed, failed, skipped = collector.summary()
     
     if failed == 0:
-        print("\n  闁?ALL TESTS PASSED. The system is ready for integration.")
+        print("\n  —ALL TESTS PASSED. The system is ready for integration.")
         return 0
     else:
-        print(f"\n  闁?{failed} TEST(S) FAILED. "
+        print(f"\n  —{failed} TEST(S) FAILED. "
               f"Please review the failure messages above.")
         return 1
 

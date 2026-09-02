@@ -18,9 +18,7 @@ Hardware requirements:
     - Digital Down-Converter (DDC) with 16-bit resolution
     - Temperature stabilization to +/- 5 mK (Bluefors LD-400 or equivalent)
 
-Author:    Klaus Weber
-           Institute for Quantum Information Processing
-           Technical University of Munich
+Author:    DKword17 <19832535010@163.com>
 Date:      2026-07-25
 Version:   2.4.1
 License:   Apache 2.0 (see LICENSE)

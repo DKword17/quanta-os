@@ -5,7 +5,7 @@ kernel/fourier_adaptive.py
 
 Quanta OS — Adaptive Quantum Fourier Transform (AQFT)
 
-Author:    Jean-Luc Mercier / INRIA Paris
+Author:    DKword17 <19832535010@163.com>
 Date:      2026-07-25
 License:   Apache 2.0
 

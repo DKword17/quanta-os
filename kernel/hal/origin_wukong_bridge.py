@@ -10,9 +10,7 @@ Origin Wukong 180-qubit Superconducting QPU Bridge
 对接本源量子云平台 / ZMQ 协议层
 Refer: https://qcloud.originqc.com.cn
 
-Author : 王磊
-         本源量子计算科技有限公司 / Origin Quantum Computing
-         合肥 · 安徽
+Author : DKword17 <19832535010@163.com>
 Date   : 2026-07-25
 
 备注:

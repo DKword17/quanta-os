@@ -12,11 +12,11 @@ from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
 """
-Quanta OS 鈥?Resource Scheduler & Quantum Job Manager
+Quanta OS —Resource Scheduler & Quantum Job Manager
 
 Responsible for managing quantum execution resources across multiple backends,
 co-locating compatible jobs on the same QPU, and managing the fidelity-utilization
-tradeoff. Architecture inspired by QOS (TUM, OSDI '25).
+tradeoff.
 
 Key design decisions:
 - Multi-programming scheduler: compatible jobs share QPU spatial/temporal resources

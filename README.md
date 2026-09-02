@@ -4,6 +4,8 @@
 
 Quanta OS 是一个面向**所有量子计算架构**的底层操作系统。它兼容市面上每一种量子处理器，为每种架构提供通用版和专用版内核，并通过自演化引擎在运行时持续优化性能。
 
+完整架构与规范参见 [docs/architecture_overview.md](docs/architecture_overview.md) 与 [docs/v2_design_spec.md](docs/v2_design_spec.md)。
+
 ---
 
 ## 支持的架构
@@ -18,82 +20,27 @@ Quanta OS 是一个面向**所有量子计算架构**的底层操作系统。它
 | **金刚石 NV 色心** | 氮空位中心自旋 | Quantum Brilliance, **国仪量子** | **室温** | ~200 ns | 50 qubits |
 | **拓扑 (Topological)** | Majorana 零模 | Microsoft Station Q | ~10 mK | ~ns(理论) | 实验阶段 |
 
----
-
-## 双模式
-
-### 通用版 (General Purpose)
-
-Auto-detect + 插件式后端，开机自动识别硬件：
-
-```
-[硬件上电] → [detect_and_select()] → [自动匹配最优后端]
-→ [架构自适应校准] → [自映射拓扑] → [进入自演化循环]
-```
-
-通用版支持在模拟器上离线开发，代码无需修改即可切换不同后端：
-
-```python
-from quanta_os import QOS
-
-# 自动检测
-qos = QOS()
-
-# 或手动指定
-qos = QOS(backend='superconducting', vendor='ibm', model='heron_r1')
-
-# 编译量子电路 → 自动选择最优门分解
-result = qos.compile("""
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[8];
-creg c[8];
-h q[0]; cx q[0],q[1]; cx q[1],q[2];
-""")
-```
-
-### 专用版 (Specialized)
-
-针对特定架构深度优化的静态内核，极端轻量（≤64KB）：
-
-```
-kernel/  + hal/qubit_abstract.h (通用接口)
-         ├──+ superconducting.h     → 超导专用: DRAG 脉冲, 重六边形拓扑
-         ├──+ trapped_ion.h         → 离子阱专用: MS 门, 全连通映射
-         ├──+ photonic.h            → 光量子专用: qumode, 分束器分解
-         ├──+ neutral_atom.h        → 中性原子: 可重配置光镊, Rydberg
-         ├──+ silicon_spin.h        → 硅自旋: 交换门, 量子点阵列
-         ├──+ nv_center.h           → NV 色心: 微波+光学混合, 室温
-         └──+ topological.h         → 拓扑: 纠错最优(future)
-```
-
-专用版剔除 HAL 调度层，直接烧入 FPGA 或 MCU。
+新增后端只需实现对应 `BackendSpec` 并注册到入口即可。
 
 ---
 
-## 架构
+## 顶层架构
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │                    Level 2: 量子自演化引擎                      │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  Variational Quantum Compiler   ←→   Architecture-aware │  │
-│  │  Pulse Optimizer (SPSA/GRAPE)   ←→   Backend Plugins   │  │
-│  │  Self-Evolution Loop            ←→   Noise Adaptation  │  │
-│  └─────────────────────────────────────────────────────────┘  │
+│   Variational Quantum Compiler ←→ Architecture-aware         │
+│   Pulse Optimizer (SPSA/GRAPE)  ←→ Backend Plugins           │
+│   Self-Evolution Loop           ←→ Noise Adaptation          │
 ├───────────────────────────────────────────────────────────────┤
-│                  Level 1: 古典微核 (≤64KB)                      │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │  Auto-detection / Backend Selection                      │  │
-│  │  Calibration (Rabi, T1/T2, Gate Set Discovery)           │  │
-│  │  Topology Self-Mapping (SABRE, Goemans-Williamson)      │  │
-│  │  Real-time Control (FPGA pulse / Laser / MW)            │  │
-│  └─────────────────────────────────────────────────────────┘  │
+│                    Level 1: 古典微核 (≤64KB)                   │
+│   Auto-detection / Backend Selection                          │
+│   Calibration (Rabi, T1/T2*, Randomized Benchmarking)         │
+│   Topology Self-Mapping (SABRE, Floyd-Warshall)               │
+│   Real-time Control (FPGA pulse / Laser / MW)                 │
 ├───────────────────────────────────────────────────────────────┤
-│                   Level 0: 硬件抽象层                           │
-│  ┌──────┬──────┬──────┬──────┬──────┬──────┬──────┐         │
-│  │ 超导 │ 离子阱│ 光量子│中性原子│硅自旋│NV色心│ 拓扑 │         │
-│  └──────┴──────┴──────┴──────┴──────┴──────┴──────┘         │
+│                    Level 0: 硬件抽象层                          │
+│  超导 │ 离子阱 │ 光量子 │ 中性原子 │ 硅自旋 │ NV色心 │ 拓扑     │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,69 +50,48 @@ kernel/  + hal/qubit_abstract.h (通用接口)
 
 ```
 quanta-os/
-├── kernel/                          C 微核 — 引导 + HAL
-│   ├── hal/                         硬件抽象层 (所有架构)
-│   │   ├── qubit_abstract.h          通用 qubit 接口
-│   │   ├── superconducting.h         超导 (IBM/Google/本源/国盾)
-│   │   ├── trapped_ion.h             离子阱 (IonQ/Quantinuum/启科)
-│   │   ├── photonic.h                光量子 (Xanadu/PsiQuantum/图灵/玻色)
-│   │   ├── neutral_atom.h            中性原子 (QuEra/Pasqal/Atom)
-│   │   ├── silicon_spin.h            硅自旋 (Intel/Diraq/Equal1)
-│   │   ├── nv_center.h               NV 色心 (Quantum Brilliance/国仪)
-│   │   └── topological.h             拓扑 (Microsoft)
-│   ├── boot.c                        通用引导流程
-│   ├── gate_discovery.c              原生门集发现
-│   ├── topology_mapper.c             拓扑自映射
-│   ├── backend_selector.c            自动后端选择
-│   ├── Makefile
-│   └── linker.ld
+├── quanta_os.py                  统一入口（QOS API + CLI）
+├── kernel/                       编译 / 调度 / 校准 / 协议 + 微核 HAL
+│   ├── circuit_compiler.py       QASM 3.0 → 7 架构编译流水线
+│   ├── calibration_protocol.py   超导 qubit 校准（T1 / T2* / RB / 漂移校正）
+│   ├── resource_scheduler.py     多程序资源调度器（兼容性打包）
+│   ├── zmq_protocol.py           ZMQ + JSON 自研协议层
+│   ├── fourier_adaptive.py       自适应量子傅里叶变换（AQFT）
+│   ├── backend_selector.c        自动后端选择
+│   ├── coupling_map.c            耦合图 + BFS 路由 / Floyd-Warshall
+│   ├── rt_control.c              实时脉冲控制（FPGA DAC/ADC）
+│   └── hal/
+│       ├── origin_wukong_bridge.py   本源悟空 180 处理器桥接
+│       └── *.h                      7 架构硬件抽象接口
 │
-├── evolution-engine/                 自演化引擎 (Python)
-│   ├── vqc_compiler.py               通用变分编译器
-│   ├── pulse_optimizer.py            脉冲优化 (SPSA/GRAPE)
-│   ├── self_evolve.py                三层自演化主循环
-│   └── backends/                     各架构后端插件
+├── evolution_engine/            自演化引擎（Python）
+│   ├── vqc_compiler.py           变分量子编译器
+│   ├── pulse_optimizer.py        脉冲自优化（SPSA / GRAPE）
+│   ├── self_evolve.py            三层自演化主循环
+│   └── backends/
 │       ├── superconducting_backend.py
-│       ├── trapped_ion_backend.py
-│       ├── photonic_backend.py
-│       ├── neutral_atom_backend.py
-│       ├── silicon_spin_backend.py
-│       ├── nv_center_backend.py
-│       └── topological_backend.py
+│       └── __init__.py           离子阱 / 光量子 / 中性原子 / 硅自旋 / NV / 拓扑
 │
-├── simulator/                        软实验环境
-│   ├── noise_channel.py              通用噪声模型
-│   ├── experiment_runner.py          实验编排
-│   └── architectures/                架构特定噪声
-│       ├── superconducting_noise.py
-│       ├── trapped_ion_noise.py
-│       ├── photonic_noise.py
-│       ├── neutral_atom_noise.py
-│       ├── silicon_spin_noise.py
-│       ├── nv_center_noise.py
-│       └── topological_noise.py
+├── simulator/                    软实验环境
+│   ├── noise_channel.py          通用噪声模型 + 拓扑生成器
+│   ├── experiment_runner.py      实验编排平台
+│   └── architectures/            各架构噪声模型
 │
-├── fpga/                             FPGA 控制
-│   ├── pulse_gen.v                   通用脉冲发生器
-│   ├── readout_ddc.v                 读出下变频
-│   ├── build.tcl
-│   └── architectures/                各架构 FPGA 控制
-│       ├── superconducting_ctrl.v
-│       └── trapped_ion_laser_ctrl.v
+├── fpga/                         FPGA 控制
+│   ├── pulse_gen.v               通用脉冲发生器
+│   ├── readout_ddc.v             读出下变频
+│   └── build.tcl
 │
-├── docs/                             文档
-│   ├── index.md                      架构索引
-│   └── architectures/                各架构详解
-│       ├── superconducting.md
-│       ├── trapped_ion.md
-│       ├── photonic.md
-│       ├── neutral_atom.md
-│       ├── silicon_spin.md
-│       ├── nv_center.md
-│       └── topological.md
+├── tests/                        全面集成测试（14 用例）
+├── docs/                         文档
+│   ├── architecture_overview.md  顶层架构总览（QOS-ARCH-001）
+│   ├── origin_pilotos_comparison.md
+│   ├── v2_design_spec.md         v2 设计规范
+│   ├── architectures/            各架构详解
+│   └── archive/                  归档（法语算法 / 研究 / v1 规范）
 │
 ├── .gitignore
-├── LICENSE                           Apache 2.0
+├── LICENSE                       Apache 2.0
 └── README.md
 ```
 
@@ -173,48 +99,105 @@ quanta-os/
 
 ## 快速开始
 
-```bash
-# 通用版 — 在任何架构上运行
-cd simulator && python experiment_runner.py
-
-# 模拟超导体
-python -c "
-from evolution_engine.vqc_compiler import VariationalQuantumCompiler
-from simulator.noise_channel import TopologyGenerator
-
-# 模拟 127-qubit IBM Eagle 拓扑
-edges = TopologyGenerator.heavy_hex(7)
-print(f'IBM Eagle topology: {len(edges)} edges')
-"
-
-# 模拟离子阱全连通
-python -c "
-from evolution_engine.backends.trapped_ion_backend import TrappedIonBackend
-
-be = TrappedIonBackend(n_ions=32, all_to_all=True)
-print(f'Trapped Ion: all-to-all connectivity = {be.spec.all_to_all}')
-"
-```
-
-## 构建
+运行时仅依赖 Python 3.10+ 与 [NumPy](https://numpy.org/)（硬件桥接可选 `pyzmq`）。
 
 ```bash
-# 通用微核
-cd kernel && make
+pip install numpy pyzmq
 
-# 专用微核 (超导版)
-cd kernel && make BACKEND=superconducting
+# 列出已知后端
+python quanta_os.py list-backends
+# → generic_simulator, wukong_180, quantinuum_h2, borealis
 
-# 专用微核 (离子阱版)
-cd kernel && make BACKEND=trapped_ion
+# 编译一个 QASM 电路（默认走内置示例）
+python quanta_os.py compile circuit.qasm --backend generic_simulator
+
+# qubit 校准
+python quanta_os.py calibrate --qubit 0
 ```
+
+Python API：
+
+```python
+from quanta_os import QOS
+
+qos = QOS(backend="generic_simulator")
+
+qasm = "OPENQASM 3.0; include \"stdgates.inc\"; qubit[2] q; h q[0]; cx q[0], q[1]; measure q[0]; measure q[1];"
+result = qos.compile(qasm)
+print(result.final_ops)          # 编译后的门操作序列
+```
+
+自演化 / 跨后端开发：
+
+```python
+from evolution_engine.self_evolve import SelfEvolutionEngine
+from evolution_engine.backends import TrappedIonBackend, NVCenterBackend
+
+# 自演化闭环
+engine = SelfEvolutionEngine(n_qubits=8)
+engine.run_evolution_cycle(n_iterations=20)
+print(engine.get_system_report())
+
+# 离子阱全连通后端
+be = TrappedIonBackend(vendor="ionq", model="Forte")
+print(be.spec)
+```
+
+软实验环境：
+
+```bash
+python simulator/experiment_runner.py
+```
+
+---
+
+## 运行测试
+
+无第三方测试框架依赖，可直接独立运行：
+
+```bash
+python tests/test_comprehensive_verification.py
+python tests/test_compiler.py
+```
+
+若安装了 `pytest`，也可：
+
+```bash
+python -m pytest tests/ -v
+```
+
+当前 14 个用例覆盖：QASM 解析、门分解/优化、多后端编译、ZMQ 协议往返、T1/T2*/随机基准校准、后端选择与端到端流程。
+
+---
+
+## FPGA 微核
+
+`fpga/` 内为 Verilog 实时控制原语（`pulse_gen.v` 脉冲发生器、`readout_ddc.v` 读出下变频），`build.tcl` 为工程脚本。使用 Vivado/Xilinx 工具链时以 `build.tcl` 驱动综合，或按需导入到你的上层工程。
+
+---
+
+## 维护者
+
+- **DKword17** <19832535010@163.com> — 本项目唯一开发者与维护者。
+
+一切版本历史、代码署名均出自同一作者。分支与版本管理遵循「开发者即维护者」的单一作者约定。
+
+---
+
+## 路线图
+
+- [x] 统一入口：QOS 面向对象 API + CLI
+- [x] 编译流水线：QASM → 优化 → 拓扑映射 → 调度
+- [x] 多后端：超导 / 离子阱 / 光量子 / 中性原子 / 硅自旋 / NV / 拓扑
+- [x] 自演化引擎：VQC + 脉冲优化（SPSA/GRAPE）三层闭环
+- [x] 校准协议：T1 / T2* / 随机基准测试 / 漂移校正
+- [ ] 补全各架构专用微核（HAL C 实装）
+- [ ] 多节点 / 分布式集群上的资源调度与容错
+- [ ] 真实硬件（本源悟空 180）桥接端到端验证
+- [ ] 更细粒度的噪声感知在线编译
 
 ---
 
 ## 许可证
 
-Apache 2.0
-
-## 状态
-
-🛠 架构阶段 — 通用 + 专用版骨架已完成，持续补充各架构后端和噪声模型
+Apache 2.0（见 [LICENSE](LICENSE)）
