@@ -8,8 +8,8 @@ import numpy as np
 import time
 from dataclasses import dataclass, field
 from typing import List, Optional
-from vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
-from pulse_optimizer import PulseOptimizer, SelfCalibratingPulseLibrary
+from .vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
+from .pulse_optimizer import PulseOptimizer, SelfCalibratingPulseLibrary
 
 
 @dataclass

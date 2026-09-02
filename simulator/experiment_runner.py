@@ -7,8 +7,8 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from simulator.noise_channel import NoisyQuantumChannel, NoiseModel, TopologyGenerator
-from evolution-engine.vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
-from evolution-engine.self_evolve import SelfEvolutionEngine
+from evolution_engine.vqc_compiler import VariationalQuantumCompiler, Topology, QubitParams, EdgeParams
+from evolution_engine.self_evolve import SelfEvolutionEngine
 import time
 import json
 
