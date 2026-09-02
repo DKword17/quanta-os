@@ -14,6 +14,8 @@ evolution-engine/vqc_compiler.py
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+
 import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
@@ -84,6 +86,7 @@ class VariationalQuantumCompiler:
         self.pulse_library: dict = {}
         self._init_pulse_library()
         self.opt_history: List[float] = []
+        self._last_fidelity: float = 0.0
     
     def _init_pulse_library(self):
         """初始化默认脉冲库（后续通过自演化优化）"""
@@ -276,14 +279,38 @@ class VariationalQuantumCompiler:
         return max(0.0, min(1.0, base_fidelity + noise))
     
     def _gradient_step(self, f_measured: float, lr: float = 0.01):
-        """参数梯度更新（自优化核心）"""
+        """参数梯度更新（自优化核心）
+        
+        使用有限差分法：对每个参数施加正负扰动，
+        比较保真度变化，仅保留改善方向。
+        """
+        improved = f_measured > self._last_fidelity
+        self._last_fidelity = f_measured
+        
         for gate_name, pulse in self.pulse_library.items():
-            # 随机扰动 + 有限差分梯度估计
+            # 有限差分梯度估计
+            eps = 0.02
             old_amp = pulse.amplitude
-            perturbation = np.random.normal(0, 0.05)
-            pulse.amplitude += perturbation
             
-            # 如果有保真度改善则保留变化
-            # 此处简化：直接沿梯度方向更新
-            pulse.amplitude = old_amp + lr * perturbation * (f_measured - 0.5)
+            # 正扰动
+            pulse.amplitude = old_amp + eps
+            # 模拟执行（简化：用保真度梯度方向代替完整重编译）
+            f_plus = f_measured * (1.0 - 0.01 * (pulse.amplitude - 1.0) ** 2)
+            
+            # 负扰动
+            pulse.amplitude = old_amp - eps
+            f_minus = f_measured * (1.0 - 0.01 * (pulse.amplitude - 1.0) ** 2)
+            
+            # 梯度 = (f+ - f-) / (2*eps)
+            grad = (f_plus - f_minus) / (2 * eps)
+            
+            # 恢复并更新（仅当改善时）
+            pulse.amplitude = old_amp
+            if improved:
+                # 沿梯度方向步进
+                pulse.amplitude += lr * grad * f_measured
+            else:
+                # 未改善 → 小幅反向探索
+                pulse.amplitude -= lr * 0.5 * grad * f_measured
+            
             pulse.amplitude = np.clip(pulse.amplitude, 0.1, 2.0)

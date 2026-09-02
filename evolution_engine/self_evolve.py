@@ -14,6 +14,8 @@ Level 2 核心——OS 自己写自己
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+
 import numpy as np
 import time
 from dataclasses import dataclass, field
@@ -36,6 +38,10 @@ class EvolutionState:
     convergence_rate: float = 1.0
     adaptation_speed: float = 1.0
     error_correction_threshold: float = 0.01
+    
+    # 收敛判定
+    converged: bool = False
+    fidelity_window: List[float] = field(default_factory=list)
 
 
 class SelfEvolutionEngine:
@@ -48,12 +54,18 @@ class SelfEvolutionEngine:
     Layer 3 — 架构级演化（小时级，拓扑重映射）
     """
     
-    def __init__(self, n_qubits: int = 16):
+    def __init__(self, n_qubits: int = 16, seed: Optional[int] = None):
         self.n_qubits = n_qubits
         self.state = EvolutionState(
             n_qubits_available=n_qubits,
             calibration_timestamp=time.time()
         )
+        if seed is not None:
+            np.random.seed(seed)
+        
+        # 参考电路：跨代不变，用于测量真实优化进展
+        self._ref_circuit = self._generate_test_circuit(complexity=8)
+        self._ref_fidelity_history: List[float] = []
         
         # 初始化拓扑
         qubits = [QubitParams(id=i) for i in range(n_qubits)]
@@ -84,47 +96,69 @@ class SelfEvolutionEngine:
         执行一次自演化循环
         
         流程：
-        1. 生成随机测试电路
+        1. 生成随机测试电路（新电路检测泛化能力）
         2. 编译并执行（模拟）
-        3. 评估保真度
+        3. 在参考电路上评估真实优化进展
         4. 根据结果优化脉冲/编译参数
-        5. 记录状态
+        5. 记录状态 + 收敛判定
         """
-        # 1. 生成测试电路
+        # 1. 生成新测试电路（泛化检测）
         test_circuit = self._generate_test_circuit(
             complexity=self.state.circuit_complexity + 1
         )
         
-        # 2. 编译
+        # 2. 编译新电路
         result = self.compiler.compile_circuit(test_circuit)
         f_before = result['estimated_fidelity']
         
-        # 3. 自优化编译器
+        # 3. 自优化编译器（在新电路上优化）
         history = self.compiler.self_optimize(test_circuit, n_iterations)
         f_after = history[-1] if history else f_before
         
-        # 4. 更新状态
+        # 4. 在参考电路上评估真实跨代进展
+        ref_result = self.compiler.compile_circuit(self._ref_circuit)
+        ref_fidelity = ref_result['estimated_fidelity']
+        self._ref_fidelity_history.append(ref_fidelity)
+        
+        # 5. 更新状态
         self.state.generation += 1
         self.state.avg_fidelity = f_after
         self.state.convergence_rate = (f_after - f_before) / max(f_before, 0.001)
         
-        # 如果收敛率低 → 增加复杂度
+        # 6. 收敛判定：参考电路保真度滑动窗口方差
+        WINDOW = 5
+        self.state.fidelity_window.append(ref_fidelity)
+        if len(self.state.fidelity_window) > WINDOW:
+            self.state.fidelity_window.pop(0)
+        
+        if len(self.state.fidelity_window) >= WINDOW:
+            window = self.state.fidelity_window
+            variance = np.var(window)
+            trend = np.polyfit(range(len(window)), window, 1)[0]  # 斜率
+            # 方差小(稳定)且斜率非负(不退化) → 收敛
+            self.state.converged = bool(variance < 0.0005 and trend >= -0.001)
+        else:
+            self.state.converged = False
+        
+        # 如果收敛率低且保真度够高 → 增加复杂度
         if self.state.convergence_rate < 0.01 and f_after > 0.8:
             self.state.circuit_complexity += 1
         
-        # 5. 自适应纠错阈值调节
+        # 7. 自适应纠错阈值调节
         if self.state.avg_fidelity < 0.95:
             self.state.error_correction_threshold = 0.02
         else:
             self.state.error_correction_threshold = 0.005
         
-        # 6. 记录
+        # 8. 记录
         self.evolution_log.append(EvolutionState(
             generation=self.state.generation,
             avg_fidelity=f_after,
             circuit_complexity=self.state.circuit_complexity,
             n_qubits_available=self.n_qubits,
             convergence_rate=self.state.convergence_rate,
+            converged=self.state.converged,
+            fidelity_window=list(self.state.fidelity_window),
         ))
         
         return self.state

@@ -21,6 +21,8 @@ Serialization: JSON
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+
 import json
 import struct
 import time
@@ -237,7 +239,7 @@ class ZMQProtocol:
         return header, body, binary
 
     @staticmethod
-    def pack_circuit_task(task: CircuitTask) -> tuple:
+    def pack_circuit_task(task: CircuitTask) -> list:
         """Pack a circuit task into ZMQ message frames."""
         header = MessageHeader.new(
             msg_type=MsgType.SUBMIT_TASK,
@@ -247,7 +249,7 @@ class ZMQProtocol:
         return ZMQProtocol.pack(header, body)
 
     @staticmethod
-    def pack_task_result(result: TaskResult) -> tuple:
+    def pack_task_result(result: TaskResult) -> list:
         """Pack a task result into ZMQ message frames."""
         header = MessageHeader.new(msg_type=MsgType.PUSH_EVENT)
         body = asdict(result)

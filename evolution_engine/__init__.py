@@ -1,0 +1,1 @@
+# evolution_engine - Quanta OS 自演化引擎（VQC/脉冲优化/自演化循环）

@@ -13,6 +13,8 @@ simulator/experiment_runner.py
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 

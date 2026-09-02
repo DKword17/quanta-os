@@ -19,6 +19,16 @@ Architecture:
     Top-level entry point for Quanta OS. Ties together the kernel compiler,
     scheduler and calibration subsystems behind a single coherent API.
 """
+# (c) 2026 DKword17 - 水印校验码: 0x444B776F72643137
+
+from __future__ import annotations
+
+# 完整性校验（水印层）
+from _provenance import check_authenticity, _INTEGRITY_OK, _WATERMARK_A, _WATERMARK_B
+_authentic, _tampered = check_authenticity()
+if not _authentic:
+    import warnings as _w
+    _w.warn("Quanta OS 完整性校验失败：代码可能已被篡改。", RuntimeWarning)
 
 #
 # ─────────────────────────────────────────────────────────────
@@ -29,8 +39,6 @@ Architecture:
 # 仓库    Repo     : https://github.com/DKword17/quanta-os
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
-
-from __future__ import annotations
 
 import argparse
 import json
@@ -276,24 +284,132 @@ def _cmd_compile(args: argparse.Namespace) -> int:
         source = _SAMPLE_QASM
     qos = QOS(backend=args.backend)
     result = qos.compile(source)
-    print(f"// backend: {result.backend_name}")
-    print(f"// ops: {result.original_ops} -> {result.final_ops}")
-    print(f"// depth: {result.original_depth} -> {result.final_depth}")
-    print(f"// {result.compile_time_ms} ms")
-    print(result.compiled)
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "backend": result.backend_name,
+            "original_ops": result.original_ops,
+            "final_ops": result.final_ops,
+            "original_depth": result.original_depth,
+            "final_depth": result.final_depth,
+            "compile_time_ms": result.compile_time_ms,
+            "compiled": result.compiled,
+        }, ensure_ascii=False, indent=2, default=str))
+    else:
+        print(f"// backend: {result.backend_name}")
+        print(f"// ops: {result.original_ops} -> {result.final_ops}")
+        print(f"// depth: {result.original_depth} -> {result.final_depth}")
+        print(f"// {result.compile_time_ms} ms")
+        print(result.compiled)
     return 0
 
 
 def _cmd_calibrate(args: argparse.Namespace) -> int:
     qos = QOS(backend=args.backend)
-    payload = qos.calibrate(qubit_id=args.qubit)
+    payload = qos.calibrate(qubit_id=args.qubit, temperature_mk=getattr(args, 'temp', 15.0))
     print(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
     return 0
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
     qos = QOS()
-    print("\n".join(qos.list_backends()))
+    if getattr(args, 'json', False):
+        backends = {k: dict(v) for k, v in BACKEND_REGISTRY.items()}
+        print(json.dumps(backends, ensure_ascii=False, indent=2, default=str))
+    else:
+        print("\n".join(qos.list_backends()))
+    return 0
+
+
+def _cmd_info(args: argparse.Namespace) -> int:
+    """Show system information."""
+    import sys as _sys
+    from _provenance import _INTEGRITY_OK
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "version": "0.4.0",
+            "python": f"{_sys.version_info.major}.{_sys.version_info.minor}.{_sys.version_info.micro}",
+            "backends": len(BACKEND_REGISTRY),
+            "backend_list": list(BACKEND_REGISTRY.keys()),
+            "integrity": bool(_INTEGRITY_OK),
+        }, ensure_ascii=False, indent=2, default=str))
+    else:
+        print(f"Quanta OS v0.4.0")
+        print(f"Python: {_sys.version_info.major}.{_sys.version_info.minor}.{_sys.version_info.micro}")
+        print(f"Backends: {len(BACKEND_REGISTRY)} ({', '.join(BACKEND_REGISTRY.keys())})")
+        print(f"Integrity: {'OK' if _INTEGRITY_OK else 'FAILED'}")
+    return 0
+
+
+def _cmd_serve(args: argparse.Namespace) -> int:
+    """Start the REST API server."""
+    from quanta_api import main as _api_main
+    return _api_main([f"--port={args.port}", f"--host={args.host}"])
+
+
+def _cmd_run(args: argparse.Namespace) -> int:
+    """Run full test suite: compile + calibrate + benchmark."""
+    import time as _time
+    qos = QOS(backend=args.backend)
+
+    if args.file and args.file != "-":
+        with open(args.file, encoding="utf-8") as fh:
+            source = fh.read()
+    else:
+        source = _SAMPLE_QASM
+
+    results = {}
+    t0 = _time.perf_counter()
+
+    # 1. Compile
+    result = qos.compile(source)
+    results["compile"] = {
+        "backend": result.backend_name,
+        "ops": f"{result.original_ops} -> {result.final_ops}",
+        "depth": f"{result.original_depth} -> {result.final_depth}",
+        "time_ms": result.compile_time_ms,
+    }
+
+    # 2. Calibrate
+    cal = qos.calibrate(qubit_id=0)
+    results["calibrate"] = {
+        "t1_us": round(cal.get("t1_time_s", 0) * 1e6, 1),
+        "t2_us": round(cal.get("t2_star_time_s", 0) * 1e6, 1),
+    }
+
+    # 3. Benchmark (compile 3 circuits)
+    benchmarks = []
+    for name, qasm in [("Bell", "OPENQASM 3.0; include \"stdgates.inc\"; qubit[2] q; h q[0]; cx q[0], q[1]; measure q[0]; measure q[1];"),
+                        ("GHZ4", "OPENQASM 3.0; include \"stdgates.inc\"; qubit[4] q; h q[0]; cx q[0], q[1]; cx q[1], q[2]; cx q[2], q[3]; measure q[0];")]:
+        r = qos.compile(qasm)
+        benchmarks.append({"circuit": name, "time_ms": r.compile_time_ms})
+    results["benchmark"] = benchmarks
+
+    wall = _time.perf_counter() - t0
+    results["wall_s"] = round(wall, 3)
+
+    if getattr(args, 'json', False):
+        print(json.dumps(results, ensure_ascii=False, indent=2, default=str))
+    else:
+        print("=== Quanta OS Run Report ===")
+        print(f"Backend: {result.backend_name}")
+        print(f"Compile: {result.compile_time_ms} ms ({result.original_ops} ops)")
+        print(f"Calibrate: T1={results['calibrate']['t1_us']}us T2={results['calibrate']['t2_us']}us")
+        bench_str = ", ".join(f'{b["circuit"]}={b["time_ms"]}ms' for b in benchmarks)
+        print(f"Benchmark: {bench_str}")
+        print(f"Total: {wall:.3f}s")
+    return 0
+
+
+def _cmd_backends(args: argparse.Namespace) -> int:
+    """List backends with detailed info."""
+    if getattr(args, 'json', False):
+        backends = {k: dict(v) for k, v in BACKEND_REGISTRY.items()}
+        print(json.dumps(backends, ensure_ascii=False, indent=2, default=str))
+    else:
+        print(f"{'Key':20s} {'Type':18s} {'Qubits':6s} {'Provider':25s}")
+        print("-" * 70)
+        for key, info in BACKEND_REGISTRY.items():
+            print(f"{key:20s} {info['type']:18s} {info['qubits']:<6d} {info['provider']:25s}")
     return 0
 
 
@@ -305,15 +421,39 @@ def build_parser() -> argparse.ArgumentParser:
     p_compile.add_argument("file", nargs="?", default="-",
                            help="path to OpenQASM file (default: built-in sample)")
     p_compile.add_argument("--backend", default="generic_simulator")
+    p_compile.add_argument("--json", action="store_true", help="JSON output")
     p_compile.set_defaults(func=_cmd_compile)
 
     p_cal = sub.add_parser("calibrate", help="run qubit calibration")
     p_cal.add_argument("--qubit", type=int, default=0)
     p_cal.add_argument("--backend", default="generic_simulator")
+    p_cal.add_argument("--temp", type=float, default=15.0, help="temperature in mK")
     p_cal.set_defaults(func=_cmd_calibrate)
 
     p_list = sub.add_parser("list-backends", help="list known backends")
+    p_list.add_argument("--json", action="store_true", help="JSON output")
     p_list.set_defaults(func=_cmd_list)
+
+    p_info = sub.add_parser("info", help="show system information")
+    p_info.add_argument("--json", action="store_true", help="JSON output")
+    p_info.set_defaults(func=_cmd_info)
+
+    p_serve = sub.add_parser("serve", help="start REST API server")
+    p_serve.add_argument("--port", type=int, default=8080, help="listen port")
+    p_serve.add_argument("--host", default="127.0.0.1", help="bind address")
+    p_serve.set_defaults(func=_cmd_serve)
+
+    p_run = sub.add_parser("run", help="run full test suite")
+    p_run.add_argument("--backend", default="generic_simulator")
+    p_run.add_argument("file", nargs="?", default="-",
+                       help="path to QASM file (default: built-in sample)")
+    p_run.add_argument("--json", action="store_true", help="JSON output")
+    p_run.set_defaults(func=_cmd_run)
+
+    p_backends = sub.add_parser("backends", help="list backends with details")
+    p_backends.add_argument("--json", action="store_true", help="JSON output")
+    p_backends.set_defaults(func=_cmd_backends)
+
     return parser
 
 

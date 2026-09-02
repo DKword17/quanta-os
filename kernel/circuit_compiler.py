@@ -16,6 +16,9 @@ Quanta OS — 量子电路编译流水线
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+# 本文件包含产权水印，移除将触发完整性检测。
+
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from typing import List, Dict, Tuple, Optional, Callable

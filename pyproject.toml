@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=64", "cython>=3.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quanta-os"
+version = "0.4.0"
+description = "Quanta OS - Quantum Operating System supporting all qubit architectures"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "DKword17", email = "19832535010@163.com"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+zmq = ["pyzmq"]
+
+[project.urls]
+Homepage = "https://github.com/DKword17/quanta-os"
+Source = "https://github.com/DKword17/quanta-os"
+
+[project.scripts]
+quanta-os = "quanta_os:main"
+
+[tool.setuptools.packages.find]
+include = [
+    "quanta_os*",
+    "quanta_api*",
+    "kernel*",
+    "simulator*",
+    "evolution_engine*",
+    "tests*",
+    "_provenance*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

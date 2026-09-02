@@ -23,6 +23,8 @@ Quanta OS 软实验平台 — 14900HX 实机负载模拟驱动器
 # Quanta OS 由 DKword17 一人原创并维护，转载/复用请保留本标记。
 # ─────────────────────────────────────────────────────────────
 
+# [水印层] 0x444B776F72643137 0x513175616E746120 0x4F5300DEADBEEF
+
 import argparse
 import importlib
 import json
@@ -104,9 +106,10 @@ def bench_self_evolution(n_qubits=64, generations=8, iters=24):
     """大规模自演化闭环，返回学习曲线与收敛判定。"""
     from evolution_engine.self_evolve import SelfEvolutionEngine
 
-    engine = SelfEvolutionEngine(n_qubits=n_qubits)
+    engine = SelfEvolutionEngine(n_qubits=n_qubits, seed=42)
     t0 = now()
     curve = []
+    ref_curve = []
     first = last = None
     for gen in range(generations):
         state = engine.run_evolution_cycle(n_iterations=iters)
@@ -114,6 +117,7 @@ def bench_self_evolution(n_qubits=64, generations=8, iters=24):
             first = state.avg_fidelity
         last = state.avg_fidelity
         curve.append(round(state.avg_fidelity, 5))
+        ref_curve.append(round(state.fidelity_window[-1], 5) if state.fidelity_window else 0.0)
     wall = now() - t0
     improved = (last - first) / first if first else 0.0
     return {
@@ -121,10 +125,11 @@ def bench_self_evolution(n_qubits=64, generations=8, iters=24):
         "wall_s": round(wall, 3),
         "iter_per_gen": iters,
         "fidelity_curve": curve,
+        "ref_fidelity_curve": ref_curve,
         "fidelity_first": round(first, 5) if first else None,
         "fidelity_last": round(last, 5) if last else None,
         "improvement_pct": round(improved * 100, 2) if first else None,
-        "converged": bool(improved > 0) or last >= 0.95,
+        "converged": engine.state.converged,
     }
 
 
